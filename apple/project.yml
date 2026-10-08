@@ -1,0 +1,133 @@
+name: JKMeeting
+options:
+  bundleIdPrefix: com.jkmeeting
+  deploymentTarget:
+    iOS: "26.0"
+    macOS: "26.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    CLANG_CXX_LANGUAGE_STANDARD: "c++20"
+    CLANG_ENABLE_OBJC_ARC: YES
+    HEADER_SEARCH_PATHS: "$(inherited) $(SRCROOT)/../core/include"
+    CONFIGURATION_BUILD_DIR: "$(PROJECT_DIR)/xcode-build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)"
+    OTHER_LDFLAGS: "$(inherited) -lc++"
+targets:
+  JKMeetingShared-iOS:
+    type: framework.static
+    platform: iOS
+    sources:
+      - path: Shared
+      - path: Bridge
+      - path: ../core/src/audio_processor.cpp
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jkmeeting.shared.ios
+        PRODUCT_NAME: JKMeetingShared_iOS
+        PRODUCT_MODULE_NAME: JKMeetingShared_iOS
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_OBJC_BRIDGING_HEADER: "$(SRCROOT)/Bridge/JKMeeting-Bridging-Header.h"
+  JKMeetingShared-macOS:
+    type: framework.static
+    platform: macOS
+    sources:
+      - path: Shared
+      - path: Bridge
+      - path: ../core/src/audio_processor.cpp
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jkmeeting.shared.macos
+        PRODUCT_NAME: JKMeetingShared_macOS
+        PRODUCT_MODULE_NAME: JKMeetingShared_macOS
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_OBJC_BRIDGING_HEADER: "$(SRCROOT)/Bridge/JKMeeting-Bridging-Header.h"
+  JKMeeting-iOS:
+    type: application
+    platform: iOS
+    sources:
+      - path: App
+        excludes:
+          - Resources
+    dependencies:
+      - target: JKMeetingShared-iOS
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jkmeeting.ios
+        PRODUCT_MODULE_NAME: JKMeeting_iOS
+        INFOPLIST_FILE: App/Resources/Info-iOS.plist
+        TARGETED_DEVICE_FAMILY: "1"
+        FRAMEWORK_SEARCH_PATHS: "$(inherited) $(BUILT_PRODUCTS_DIR)"
+      configs:
+        Debug:
+          INFOPLIST_FILE: App/Resources/Info-iOS-Debug.plist
+  JKMeeting-macOS:
+    type: application
+    platform: macOS
+    sources:
+      - path: App
+        excludes:
+          - Resources
+    dependencies:
+      - target: JKMeetingShared-macOS
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jkmeeting.macos
+        PRODUCT_MODULE_NAME: JKMeeting_macOS
+        INFOPLIST_FILE: App/Resources/Info-macOS.plist
+        CODE_SIGN_ENTITLEMENTS: App/Resources/JKMeeting-macOS.entitlements
+        FRAMEWORK_SEARCH_PATHS: "$(inherited) $(BUILT_PRODUCTS_DIR)"
+      configs:
+        Debug:
+          INFOPLIST_FILE: App/Resources/Info-macOS-Debug.plist
+  JKMeeting-iOSTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: SharedTests
+    dependencies:
+      - target: JKMeetingShared-iOS
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: ""
+        BUNDLE_LOADER: ""
+        FRAMEWORK_SEARCH_PATHS: "$(inherited) $(BUILT_PRODUCTS_DIR)"
+  JKMeeting-macOSTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: SharedTests
+    dependencies:
+      - target: JKMeetingShared-macOS
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: ""
+        BUNDLE_LOADER: ""
+        FRAMEWORK_SEARCH_PATHS: "$(inherited) $(BUILT_PRODUCTS_DIR)"
+schemes:
+  JKMeeting-iOS:
+    build:
+      targets:
+        JKMeetingShared-iOS: all
+        JKMeeting-iOS: all
+        JKMeeting-iOSTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - name: JKMeeting-iOSTests
+  JKMeeting-macOS:
+    build:
+      targets:
+        JKMeetingShared-macOS: all
+        JKMeeting-macOS: all
+        JKMeeting-macOSTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - name: JKMeeting-macOSTests

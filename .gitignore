@@ -1,0 +1,25 @@
+# Local CMake build artifacts
+core/build/
+apple/cmake-build/
+
+# XcodeGen/Xcode local build artifacts
+apple/build/
+apple/xcode-build/
+
+# Local-only configuration, credentials, model and generated logs
+.env
+.env.*
+!.env.example
+server/seaweedfs/s3.json
+server/whisper/models/
+**/__pycache__/
+**/*.pyc
+output/
+whisper-server-*.wav
+
+# Xcode personal state
+**/xcuserdata/
+**/*.xcuserstate
+
+# Local, append-only agent work logs; durable project decisions live in docs/.
+.workbuddy/memory/

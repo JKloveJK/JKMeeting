@@ -1,0 +1,52 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: jkmeeting
+      POSTGRES_USER: jkmeeting
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?请在本机 .env 或进程环境中设置 POSTGRES_PASSWORD}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jkmeeting -d jkmeeting"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
+  seaweedfs:
+    image: chrislusf/seaweedfs:3.68
+    command: server -dir=/data -filer -s3 -s3.port=9000 -s3.config=/etc/seaweedfs/s3.json -master.volumeSizeLimitMB=100
+    ports:
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:8888"
+      - "127.0.0.1:9333:9333"
+    volumes:
+      - seaweedfs_data:/data
+      - ./server/seaweedfs/s3.json:/etc/seaweedfs/s3.json:ro
+    healthcheck:
+      test: ["CMD-SHELL", "host_ip=$$(hostname -i); wget -q -O /dev/null http://$$host_ip:9333/cluster/status"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
+volumes:
+  postgres_data:
+  redis_data:
+  seaweedfs_data:
