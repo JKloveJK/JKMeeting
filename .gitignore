@@ -1,6 +1,8 @@
 # Local CMake build artifacts
 core/build/
+core/build-release/
 apple/cmake-build/
+apple/third_party/
 
 # XcodeGen/Xcode local build artifacts
 apple/build/
