@@ -10,7 +10,7 @@ settings:
     SWIFT_VERSION: "6.0"
     CLANG_CXX_LANGUAGE_STANDARD: "c++20"
     CLANG_ENABLE_OBJC_ARC: YES
-    HEADER_SEARCH_PATHS: "$(inherited) $(SRCROOT)/../core/include"
+    HEADER_SEARCH_PATHS: "$(inherited) $(SRCROOT)/../core/include $(SRCROOT)/../core/third_party/opus/include"
     CONFIGURATION_BUILD_DIR: "$(PROJECT_DIR)/xcode-build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)"
     OTHER_LDFLAGS: "$(inherited) -lc++"
 targets:
@@ -20,7 +20,10 @@ targets:
     sources:
       - path: Shared
       - path: Bridge
-      - path: ../core/src/audio_processor.cpp
+      - path: ../core/src
+    dependencies:
+      - framework: third_party/Opus.xcframework
+        embed: false
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.jkmeeting.shared.ios
@@ -34,7 +37,10 @@ targets:
     sources:
       - path: Shared
       - path: Bridge
-      - path: ../core/src/audio_processor.cpp
+      - path: ../core/src
+    dependencies:
+      - framework: third_party/Opus.xcframework
+        embed: false
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.jkmeeting.shared.macos
@@ -51,6 +57,8 @@ targets:
           - Resources
     dependencies:
       - target: JKMeetingShared-iOS
+      - framework: third_party/Opus.xcframework
+        embed: false
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.jkmeeting.ios
@@ -70,6 +78,8 @@ targets:
           - Resources
     dependencies:
       - target: JKMeetingShared-macOS
+      - framework: third_party/Opus.xcframework
+        embed: false
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.jkmeeting.macos
@@ -87,6 +97,8 @@ targets:
       - path: SharedTests
     dependencies:
       - target: JKMeetingShared-iOS
+      - framework: third_party/Opus.xcframework
+        embed: false
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
@@ -100,6 +112,8 @@ targets:
       - path: SharedTests
     dependencies:
       - target: JKMeetingShared-macOS
+      - framework: third_party/Opus.xcframework
+        embed: false
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES

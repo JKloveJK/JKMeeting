@@ -144,14 +144,25 @@ public final class AppleAudioCapture: NSObject, AudioCapture, @unchecked Sendabl
         }
 
         let timestampMs: Int64
+        let sampleTime: Int64?
         if time.isSampleTimeValid, buffer.format.sampleRate > 0 {
             timestampMs = Int64((Double(time.sampleTime) / buffer.format.sampleRate) * 1_000)
+            sampleTime = time.sampleTime
         } else {
             timestampMs = 0
+            sampleTime = nil
         }
+        let hostTimeNs: Int64? = time.isHostTimeValid
+            ? Int64(AVAudioTime.seconds(forHostTime: time.hostTime) * 1_000_000_000)
+            : nil
 
         do {
-            let frame = try converter.convert(buffer: buffer, timestampMs: timestampMs)
+            let frame = try converter.convert(
+                buffer: buffer,
+                timestampMs: timestampMs,
+                sampleTime: sampleTime,
+                hostTimeNs: hostTimeNs
+            )
             stateLock.lock()
             let callback = onFrame
             stateLock.unlock()

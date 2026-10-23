@@ -36,6 +36,8 @@ final class AppleRecordingManagerTests: XCTestCase {
             case .success(let metadata):
                 XCTAssertGreaterThan(metadata.sizeBytes, 0)
                 XCTAssertTrue(FileManager.default.fileExists(atPath: metadata.fileURL.path))
+                XCTAssertEqual(metadata.fileURL.pathExtension, "ogg")
+                XCTAssertEqual(metadata.durationMs, 500)
             case .failure(let error): XCTFail("录音不应失败：\(error)")
             }
             stopped.fulfill()

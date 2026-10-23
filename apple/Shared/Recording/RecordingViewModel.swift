@@ -19,16 +19,29 @@ public final class RecordingViewModel: ObservableObject {
     @Published public private(set) var state: RecordingState = .idle
     @Published public private(set) var transcriptionPhase: TranscriptionPhase = .unavailable
     @Published public private(set) var transcriptionText: String?
+    @Published public private(set) var remotePlayback: RemotePlayback?
+    public let hlsPlayback: HLSPlaybackController
     private let manager: RecordingManaging
     private let transcriptionClient: RecordingTranscribing?
+    private let remotePlaybackProvider: RemotePlaybackProviding?
     private var transcriptionTask: Task<Void, Never>?
+    private var remotePlaybackTask: Task<Void, Never>?
+    private let remotePlaybackPollInterval: Duration
     private var recordingGeneration = 0
     private var latestMetadata: RecordingMetadata?
     private var latestStopReason: RecordingStopReason = .user
 
-    public init(manager: RecordingManaging, transcriptionClient: RecordingTranscribing? = try? RecordingAPIClient()) {
+    public init(
+        manager: RecordingManaging,
+        transcriptionClient: RecordingTranscribing? = try? RecordingAPIClient(),
+        hlsPlayback: HLSPlaybackController = HLSPlaybackController(),
+        remotePlaybackPollInterval: Duration = .seconds(1)
+    ) {
         self.manager = manager
+        self.remotePlaybackPollInterval = remotePlaybackPollInterval
         self.transcriptionClient = transcriptionClient
+        self.remotePlaybackProvider = transcriptionClient as? RemotePlaybackProviding
+        self.hlsPlayback = hlsPlayback
         self.transcriptionPhase = transcriptionClient == nil ? .unavailable : .ready
         manager.setAutomaticStopHandler { [weak self] result, reason in
             guard let self, case .recording = self.state else { return }
@@ -44,6 +57,7 @@ public final class RecordingViewModel: ObservableObject {
         transcriptionPhase = transcriptionClient == nil ? .unavailable : .ready
         transcriptionText = nil
         latestMetadata = nil
+        resetRemotePlayback()
         manager.stopPlayback()
         state = .requestingPermission
         manager.start { [weak self] result in
@@ -99,6 +113,7 @@ public final class RecordingViewModel: ObservableObject {
                 transcriptionText = text
                 transcriptionPhase = .done
                 transcriptionTask = nil
+                refreshRemotePlayback()
             } catch is CancellationError {
                 guard let self, recordingGeneration == generation else { return }
                 transcriptionPhase = .ready
@@ -120,6 +135,7 @@ public final class RecordingViewModel: ObservableObject {
 
     public func playRecording() {
         guard let metadata = latestMetadata else { return }
+        hlsPlayback.stop()
         manager.play(fileURL: metadata.fileURL) { [weak self] result in
             Task { @MainActor in
                 guard let self else { return }
@@ -137,5 +153,44 @@ public final class RecordingViewModel: ObservableObject {
         manager.stopPlayback()
         guard let metadata = latestMetadata else { return }
         state = .recorded(metadata, stopReason: latestStopReason)
+    }
+
+    /// 转码与转写并行执行，转写完成时 HLS 通常已就绪；未就绪时短暂轮询，失败或超时只隐藏远程回放，不影响本地回放。
+    public func refreshRemotePlayback(maxAttempts: Int = 30) {
+        guard let provider = remotePlaybackProvider, let recordingID = provider.lastRecordingID else { return }
+        let generation = recordingGeneration
+        let pollInterval = remotePlaybackPollInterval
+        remotePlaybackTask?.cancel()
+        remotePlaybackTask = Task { [weak self] in
+            for _ in 0..<maxAttempts {
+                guard let playback = try? await provider.remotePlayback(recordingID: recordingID) else { break }
+                guard let self, self.recordingGeneration == generation, !Task.isCancelled else { return }
+                self.remotePlayback = playback
+                if playback.isHLSReady || ["failed", "none"].contains(playback.transcodeStatus) { return }
+                try? await Task.sleep(for: pollInterval)
+            }
+        }
+    }
+
+    public func playRemote() async {
+        guard let url = remotePlayback?.hlsURL else { return }
+        manager.stopPlayback()
+        do {
+            try await hlsPlayback.load(url: url)
+            hlsPlayback.play()
+        } catch {
+            hlsPlayback.stop()
+        }
+    }
+
+    public func stopRemote() {
+        hlsPlayback.stop()
+    }
+
+    private func resetRemotePlayback() {
+        remotePlaybackTask?.cancel()
+        remotePlaybackTask = nil
+        remotePlayback = nil
+        hlsPlayback.stop()
     }
 }

@@ -33,7 +33,12 @@ public final class NativePCMFrameConverter: @unchecked Sendable {
         self.destinationFormat = destinationFormat
     }
 
-    public func convert(buffer: AVAudioPCMBuffer, timestampMs: Int64) throws -> CapturedPCMFrame {
+    public func convert(
+        buffer: AVAudioPCMBuffer,
+        timestampMs: Int64,
+        sampleTime: Int64? = nil,
+        hostTimeNs: Int64? = nil
+    ) throws -> CapturedPCMFrame {
         lock.lock()
         defer { lock.unlock() }
 
@@ -71,7 +76,9 @@ public final class NativePCMFrameConverter: @unchecked Sendable {
             pcmData: Data(bytes: bytes, count: Int(audioBuffer.mDataByteSize)),
             sampleRate: Int(destinationFormat.sampleRate),
             channels: Int(destinationFormat.channelCount),
-            timestampMs: timestampMs
+            timestampMs: timestampMs,
+            sampleTime: sampleTime,
+            hostTimeNs: hostTimeNs
         )
     }
 }

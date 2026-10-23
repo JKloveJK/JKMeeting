@@ -22,6 +22,7 @@ public enum RecordingAPIError: LocalizedError {
     case uploadExpired
     case transcriptionFailed(String)
     case timedOut
+    case unsupportedAudioFormat(String)
 
     public var errorDescription: String? {
         switch self {
@@ -32,8 +33,26 @@ public enum RecordingAPIError: LocalizedError {
         case .uploadExpired: "上传地址已过期，请重新发起转写"
         case .transcriptionFailed(let message): "转写失败：\(message)"
         case .timedOut: "转写等待超时，录音仍保存在本地，可重试"
+        case .unsupportedAudioFormat(let fileExtension): "不支持的录音格式：\(fileExtension)"
         }
     }
+}
+
+/// 服务端回放接口的结果；`hlsURL` 为已签名、可直接交给 AVPlayer 的 master playlist 地址。
+public struct RemotePlayback: Equatable, Sendable {
+    public let recordingID: String
+    public let transcodeStatus: String
+    public let hlsURL: URL?
+    public let variantsKbps: [Int]
+    public let transcodeError: String?
+
+    public var isHLSReady: Bool { transcodeStatus == "ready" && hlsURL != nil && !variantsKbps.isEmpty }
+}
+
+@MainActor
+public protocol RemotePlaybackProviding: AnyObject {
+    var lastRecordingID: String? { get }
+    func remotePlayback(recordingID: String) async throws -> RemotePlayback
 }
 
 private final class RejectRedirects: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
@@ -43,7 +62,16 @@ private final class RejectRedirects: NSObject, URLSessionTaskDelegate, @unchecke
 }
 
 @MainActor
-public final class RecordingAPIClient: RecordingTranscribing {
+public final class RecordingAPIClient: RecordingTranscribing, RemotePlaybackProviding {
+    public private(set) var lastRecordingID: String?
+
+    private struct Playback: Decodable {
+        let transcode_status: String?
+        let hls_url: String?
+        let hls_variants_kbps: String?
+        let transcode_error: String?
+    }
+
     private struct Created: Decodable {
         let recording_id: String
         let upload_url: String
@@ -97,12 +125,21 @@ public final class RecordingAPIClient: RecordingTranscribing {
         return true
     }
 
-    private func uploadURL(_ value: String, recordingID: String) throws -> URL {
+    /// 与服务端白名单一致；未知扩展名直接失败，不默认当作 m4a。
+    static func audioFormat(for fileURL: URL) throws -> (fileExtension: String, contentType: String) {
+        switch fileURL.pathExtension.lowercased() {
+        case "ogg": ("ogg", "audio/ogg")
+        case "m4a": ("m4a", "audio/mp4")
+        case let other: throw RecordingAPIError.unsupportedAudioFormat(other)
+        }
+    }
+
+    private func uploadURL(_ value: String, recordingID: String, fileExtension: String) throws -> URL {
         guard let url = URL(string: value), let origin = URLComponents(url: storageOrigin, resolvingAgainstBaseURL: false),
               let signed = URLComponents(url: url, resolvingAgainstBaseURL: false),
               signed.scheme == origin.scheme, signed.host == origin.host, signed.port == origin.port,
               signed.user == nil, signed.password == nil, signed.fragment == nil,
-              signed.path == "/recordings/recordings/\(recordingID.lowercased())/audio.m4a",
+              signed.path == "/recordings/recordings/\(recordingID.lowercased())/audio.\(fileExtension)",
               signed.queryItems?.contains(where: { $0.name == "X-Amz-Signature" && !$0.value.isNilOrEmpty }) == true else {
             throw RecordingAPIError.invalidUploadURL
         }
@@ -127,10 +164,10 @@ public final class RecordingAPIClient: RecordingTranscribing {
         return try JSONDecoder().decode(Status.self, from: data)
     }
 
-    private func put(file: URL, at url: URL) async throws {
+    private func put(file: URL, at url: URL, contentType: String) async throws {
         var request = URLRequest(url: url)
         request.httpMethod = "PUT"
-        request.setValue("audio/mp4", forHTTPHeaderField: "Content-Type")
+        request.setValue(contentType, forHTTPHeaderField: "Content-Type")
         let (_, reply) = try await session.upload(for: request, fromFile: file)
         guard let http = reply as? HTTPURLResponse else { throw RecordingAPIError.invalidResponse }
         guard (200...299).contains(http.statusCode) else { throw RecordingAPIError.requestFailed(http.statusCode) }
@@ -145,6 +182,7 @@ public final class RecordingAPIClient: RecordingTranscribing {
         guard metadata.durationMs > 0, metadata.sizeBytes > 0, metadata.fileURL.isFileURL else {
             throw RecordingAPIError.invalidResponse
         }
+        let format = try Self.audioFormat(for: metadata.fileURL)
         onStatus(.uploading)
         var lastError: Error = RecordingAPIError.invalidResponse
         for attempt in 0..<2 {
@@ -154,13 +192,14 @@ public final class RecordingAPIClient: RecordingTranscribing {
                 var create = apiRequest("v1/recordings", method: "POST")
                 create.setValue("application/json", forHTTPHeaderField: "Content-Type")
                 create.httpBody = try JSONSerialization.data(withJSONObject: [
-                    "duration_ms": metadata.durationMs, "size_bytes": metadata.sizeBytes, "content_type": "audio/mp4"
+                    "duration_ms": metadata.durationMs, "size_bytes": metadata.sizeBytes, "content_type": format.contentType
                 ])
                 let (data, reply) = try await session.data(for: create)
                 try response(reply, expected: 201)
                 let created = try JSONDecoder().decode(Created.self, from: data)
                 guard UUID(uuidString: created.recording_id) != nil else { throw RecordingAPIError.invalidResponse }
-                let signed = try uploadURL(created.upload_url, recordingID: created.recording_id)
+                lastRecordingID = created.recording_id
+                let signed = try uploadURL(created.upload_url, recordingID: created.recording_id, fileExtension: format.fileExtension)
                 guard let expires = ISO8601DateFormatter().date(from: created.upload_expires_at), expires > Date() else {
                     throw RecordingAPIError.uploadExpired
                 }
@@ -168,7 +207,7 @@ public final class RecordingAPIClient: RecordingTranscribing {
                 for _ in 0..<2 {
                     try Task.checkCancellation()
                     guard expires > Date() else { throw RecordingAPIError.uploadExpired }
-                    do { try await put(file: metadata.fileURL, at: signed); uploaded = true; break }
+                    do { try await put(file: metadata.fileURL, at: signed, contentType: format.contentType); uploaded = true; break }
                     catch is CancellationError { throw CancellationError() }
                     catch { lastError = error }
                 }
@@ -180,7 +219,7 @@ public final class RecordingAPIClient: RecordingTranscribing {
                     let current = try await status(for: created.recording_id)
                     if current.status == "created" {
                         guard expires > Date() else { throw RecordingAPIError.uploadExpired }
-                        try await put(file: metadata.fileURL, at: signed)
+                        try await put(file: metadata.fileURL, at: signed, contentType: format.contentType)
                         try await confirm(created.recording_id)
                     } else if current.status == "failed" {
                         throw RecordingAPIError.transcriptionFailed(current.error_message ?? "服务端处理失败")
@@ -215,6 +254,33 @@ public final class RecordingAPIClient: RecordingTranscribing {
         }
         if lastError is RecordingAPIError { throw lastError }
         throw RecordingAPIError.requestFailed(0)
+    }
+
+    public func remotePlayback(recordingID: String) async throws -> RemotePlayback {
+        guard UUID(uuidString: recordingID) != nil else { throw RecordingAPIError.invalidResponse }
+        let (data, reply) = try await session.data(for: apiRequest("v1/recordings/\(recordingID)/playback", method: "GET"))
+        try response(reply, expected: 200)
+        return try Self.remotePlayback(from: data, apiBaseURL: apiURL, recordingID: recordingID)
+    }
+
+    /// hls_url 是相对路径；只接受同一 API 源下该录音的 master playlist，防止服务端返回值把播放器引向任意地址。
+    static func remotePlayback(from data: Data, apiBaseURL: URL, recordingID: String) throws -> RemotePlayback {
+        let payload = try JSONDecoder().decode(Playback.self, from: data)
+        let status = payload.transcode_status ?? "none"
+        var hlsURL: URL?
+        if let raw = payload.hls_url, !raw.isEmpty {
+            guard let resolved = URL(string: raw, relativeTo: apiBaseURL)?.absoluteURL,
+                  let components = URLComponents(url: resolved, resolvingAgainstBaseURL: false),
+                  components.scheme == apiBaseURL.scheme, components.host == apiBaseURL.host, components.port == apiBaseURL.port,
+                  components.path == "/v1/hls/\(recordingID.lowercased())/master.m3u8",
+                  components.queryItems?.contains(where: { $0.name == "sig" && !$0.value.isNilOrEmpty }) == true else {
+                throw RecordingAPIError.invalidResponse
+            }
+            hlsURL = resolved
+        }
+        let variants = (payload.hls_variants_kbps ?? "").split(separator: ",").compactMap { Int($0.trimmingCharacters(in: .whitespaces)) }
+        return RemotePlayback(recordingID: recordingID, transcodeStatus: status, hlsURL: hlsURL,
+                              variantsKbps: variants, transcodeError: payload.transcode_error)
     }
 }
 

@@ -139,8 +139,8 @@ public final class AppleRecordingManager: RecordingManaging {
     private func startCapture(completion: @escaping @Sendable (Result<Void, RecordingError>) -> Void) {
         do {
             try FileManager.default.createDirectory(at: recordingsDirectory, withIntermediateDirectories: true)
-            let fileURL = recordingsDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("m4a")
-            let writer = try AppleAudioFileWriter(fileURL: fileURL, sampleRate: 16_000, channels: 1)
+            let fileURL = recordingsDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("ogg")
+            let writer = try OggOpusFileWriter(fileURL: fileURL, sampleRate: 16_000, channels: 1)
             pipelineStore.install(RecordingPipeline(writer: writer))
             capture.start(onFrame: { [pipelineStore] frame in
                 pipelineStore.enqueue(frame)

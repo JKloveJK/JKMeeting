@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		00054AD62F830BAA9E9006ED /* RecordingPipelineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 486CC47CA338D8570CCC8B35 /* RecordingPipelineTests.swift */; };
+		01432D89EEFC7506190EB4E2 /* ogg_opus_decoder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5AF971F6D7089CA1F4362D05 /* ogg_opus_decoder.cpp */; };
 		0F60E111CBD604D630F75159 /* AudioCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 916C8E28C99C988A00EB9C05 /* AudioCapture.swift */; };
 		103A9AA0A82FE23D2F44BD40 /* RecordingAPIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EF397605F96DBEDD8B38910 /* RecordingAPIClient.swift */; };
 		12DF37CE06625FDD5446605A /* JKMeetingCore.mm in Sources */ = {isa = PBXBuildFile; fileRef = 073AB5E184821144BE2D38B7 /* JKMeetingCore.mm */; };
@@ -15,57 +16,94 @@
 		141888241D5B90EF09109EB3 /* CoreModuleMarker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F4260194737082A705A8285 /* CoreModuleMarker.swift */; };
 		1620F8EAE359844664BBF7F1 /* AppleAudioFileWriterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0EC5A5F134D4F639878EC89 /* AppleAudioFileWriterTests.swift */; };
 		18BB3957F01C27380C3EA469 /* AppleRecordingManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FF429AD5247DF2C4E896C01 /* AppleRecordingManagerTests.swift */; };
+		19670FF7364BC10D8E468E99 /* ogg_opus_decoder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5AF971F6D7089CA1F4362D05 /* ogg_opus_decoder.cpp */; };
 		1BF6695B70C677500980CEA5 /* RecordingPipelineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 486CC47CA338D8570CCC8B35 /* RecordingPipelineTests.swift */; };
 		1F383E9C5542D0E7C9C350EA /* AppleRecordingManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FF429AD5247DF2C4E896C01 /* AppleRecordingManagerTests.swift */; };
+		1F6A082DDADE340C73840E9B /* ogg_packet_reader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7792A95FB8D2D7633AE6CC02 /* ogg_packet_reader.cpp */; };
 		211A70E0A579D3F9C927AB27 /* JKMeetingApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D10A749A2ABF1C68A8E3EAF /* JKMeetingApp.swift */; };
 		22587E81FB024F7B6B7122E5 /* AppleAudioFileWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E301969990BFFB0A861FE1B /* AppleAudioFileWriter.swift */; };
 		2C30F5C33C83855A3C4D40DA /* JKMeetingCore.mm in Sources */ = {isa = PBXBuildFile; fileRef = 073AB5E184821144BE2D38B7 /* JKMeetingCore.mm */; };
+		2F17DDF92AC38C47A07A9ADF /* OggOpusFilePlayerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B23F58E939A92895E5458B4 /* OggOpusFilePlayerTests.swift */; };
 		2F730B8311F2C1279D43585D /* RecordingViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7394D30928B339716BBC979B /* RecordingViewModelTests.swift */; };
 		337E5406891002BC92196422 /* AppleAudioCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = E371F6CE63E7DCF03F760CCF /* AppleAudioCapture.swift */; };
 		416925EBA3820E927B02A18D /* CoreProcessorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E1A1A90048C5002255D94F8 /* CoreProcessorTests.swift */; };
+		41825B2EBC1F3F6B2FC7FFE3 /* OggOpusFileWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6D203E02702D7F8F64C15B9 /* OggOpusFileWriter.swift */; };
+		41A18966E87376FD50B8D6A2 /* streaming_resampler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 593764D717B74E0ACD0DEB5E /* streaming_resampler.cpp */; };
 		426307FF19C9DB226D388B8E /* RecordingAPIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EF397605F96DBEDD8B38910 /* RecordingAPIClient.swift */; };
 		42F9BD82602E7C61A7427D71 /* RecordingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E2B4EE70A3268777A8C1111 /* RecordingView.swift */; };
+		466FFF19918C35D85BF822E0 /* ogg_opus_muxer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DA8A898EE4B26F4DF2E3988B /* ogg_opus_muxer.cpp */; };
 		48B65A27DFA84650358E6922 /* AppleAudioFileWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E301969990BFFB0A861FE1B /* AppleAudioFileWriter.swift */; };
+		49EF11D35628FE8921F6F55C /* Opus.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = BB26B30348A23AE1A39058DE /* Opus.xcframework */; };
 		4A4CAC00CE422392C53F5227 /* AppleAudioPlayback.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0166B3A4BB0B167A0E56E987 /* AppleAudioPlayback.swift */; };
 		4E4E4C1130CD80802A99AEC3 /* AppleRecordingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FE5993ACD93479483EDE572 /* AppleRecordingManager.swift */; };
+		523F412F1FC8D12555E63EE5 /* opus_encoder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5BE3B61BA4809478DDA554D6 /* opus_encoder.cpp */; };
 		5246B5EFA499081C9660FAB7 /* AppleAudioCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = E371F6CE63E7DCF03F760CCF /* AppleAudioCapture.swift */; };
 		5342BCB0A14A2455E39BD9A3 /* JKMeetingApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D10A749A2ABF1C68A8E3EAF /* JKMeetingApp.swift */; };
+		5431199419F15BCF5170DD18 /* ogg_opus_encoder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 667A953C54ED39765B62560B /* ogg_opus_encoder.cpp */; };
+		54865D8FE119DE24C7E2ED1F /* frame_timeline.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 10A8A4D4A17D542C56688748 /* frame_timeline.cpp */; };
 		54C248D148FFCE225173E59F /* CoreProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DACF1CCFB81F7A9F560E6C /* CoreProcessor.swift */; };
+		56E8069367006E13509E67E2 /* OggOpusFileWriterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DBBB1804423B3687303851E /* OggOpusFileWriterTests.swift */; };
+		5873B43B804C1FCB86EC4A54 /* OggOpusFileWriterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DBBB1804423B3687303851E /* OggOpusFileWriterTests.swift */; };
 		59B7217CBC3E8BFF96465DAE /* CoreModuleMarker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F4260194737082A705A8285 /* CoreModuleMarker.swift */; };
+		5A76E5D1D59D95A8C7864275 /* OggOpusFilePlayerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B23F58E939A92895E5458B4 /* OggOpusFilePlayerTests.swift */; };
 		5DCB3BC66E6F1AB3A658FCF7 /* AudioCaptureLifecycle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 869B7BFC02D7349ADE1D2D02 /* AudioCaptureLifecycle.swift */; };
+		663CC28B0EDE34706A27C8A9 /* PCMRingBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E1740C292F980EE1F383B17 /* PCMRingBuffer.swift */; };
 		676037A63F42816239DBDE87 /* RecordingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92C8FF12CB96FA3F6CBED272 /* RecordingViewModel.swift */; };
 		678C29955AC9B09760DD8B05 /* JKMeeting-Bridging-Header.h in Headers */ = {isa = PBXBuildFile; fileRef = 0B8FA95EE4A460746FEA488D /* JKMeeting-Bridging-Header.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		6B7300F4706ED2D6FD26D6BF /* AppleAudioPlaybackTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AE69541537064E816E89699 /* AppleAudioPlaybackTests.swift */; };
 		72BA65FAC5F20B8707F8A4C9 /* AppleAudioPlayback.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0166B3A4BB0B167A0E56E987 /* AppleAudioPlayback.swift */; };
+		74FC98E54628BB55D2BD1F9F /* HLSPlaybackController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4013FF9F80641CB20B475643 /* HLSPlaybackController.swift */; };
 		78577999D2B7DD8171327B57 /* RecordingPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2464DE73164AE0A8160DC2 /* RecordingPipeline.swift */; };
 		7D896AE9CB271C6660B83FCC /* RecordingAPIClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10007269B3E9A1326F3E5FD5 /* RecordingAPIClientTests.swift */; };
+		8193FB3795BF45EEC0C59327 /* ogg_packet_reader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7792A95FB8D2D7633AE6CC02 /* ogg_packet_reader.cpp */; };
 		83D421268CE04B46B7788266 /* AppleRecordingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FE5993ACD93479483EDE572 /* AppleRecordingManager.swift */; };
+		87DB1051821E9FFFFA3CE593 /* Opus.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = BB26B30348A23AE1A39058DE /* Opus.xcframework */; };
 		889EAD7961DD5BA6755F8B69 /* JKMeetingCore.h in Headers */ = {isa = PBXBuildFile; fileRef = 0408376F0974BFC55DE84DB8 /* JKMeetingCore.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		8E817CD7866FCC1915D737B6 /* ogg_opus_encoder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 667A953C54ED39765B62560B /* ogg_opus_encoder.cpp */; };
 		914044B298F5B153DCB6E310 /* JKMeetingShared-macOS.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AEA0BBCE1CB025717BEAD504 /* JKMeetingShared-macOS.framework */; };
+		96E80929DA6F6FD50C2A36C1 /* OggOpusFilePlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA7D197041F021B668C30091 /* OggOpusFilePlayer.swift */; };
 		9965A0828B0C7DE34F1D1A8A /* CoreProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49DACF1CCFB81F7A9F560E6C /* CoreProcessor.swift */; };
 		9ACE7EECE336CBDF29D7979A /* AudioCaptureLifecycle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 869B7BFC02D7349ADE1D2D02 /* AudioCaptureLifecycle.swift */; };
 		9CF34E3215BCD9E4FD15E50D /* NativePCMFrameConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = D74DF88EEDB84A5A33BC5779 /* NativePCMFrameConverter.swift */; };
+		9E80F433F9A5F46C965B120F /* streaming_resampler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 593764D717B74E0ACD0DEB5E /* streaming_resampler.cpp */; };
+		9EBD9FF4D7B789D16AE9C9CE /* silence_detector.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 49508C148CB6630C8E0636E3 /* silence_detector.cpp */; };
 		A47B71D7F11EF3A6FBBC5CA3 /* RecordingState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22723FEA8B119EB3E5C54172 /* RecordingState.swift */; };
 		A8D2FF6FF1874D5D30158153 /* RecordingState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22723FEA8B119EB3E5C54172 /* RecordingState.swift */; };
+		A915688395FF26DE72FBE355 /* Opus.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = BB26B30348A23AE1A39058DE /* Opus.xcframework */; };
 		A99EBE13F22F93400B787A56 /* AppleAudioFileWriterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0EC5A5F134D4F639878EC89 /* AppleAudioFileWriterTests.swift */; };
 		AB7D7745FBE0F0310C2773C6 /* RecordingAPIClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10007269B3E9A1326F3E5FD5 /* RecordingAPIClientTests.swift */; };
 		AED87542C592914F9D340D57 /* JKMeetingShared-iOS.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 64F93140A90F430964653064 /* JKMeetingShared-iOS.framework */; };
 		B0870E285A8F7E5D1FC21E05 /* JKMeetingCore.h in Headers */ = {isa = PBXBuildFile; fileRef = 0408376F0974BFC55DE84DB8 /* JKMeetingCore.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		B21D3C6B75FDFAB8BB4C83A9 /* HLSPlaybackControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D35F354AF4699C2F7DA780E /* HLSPlaybackControllerTests.swift */; };
 		B22363761586DAB89D5845B6 /* RecordingStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1ED0A61E58E50EEB75899AC /* RecordingStateTests.swift */; };
 		B300E6A3E6DB07765044AD91 /* AudioCaptureContractTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92764768954973033548BB77 /* AudioCaptureContractTests.swift */; };
+		B3EF04DB7FBB24BE5B35B35F /* Opus.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = BB26B30348A23AE1A39058DE /* Opus.xcframework */; };
 		B4F84AF465A24BE514410A8B /* RecordingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92C8FF12CB96FA3F6CBED272 /* RecordingViewModel.swift */; };
+		B50BBFEA80B0E658A8D5FD0D /* audio_session.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A91F46835B6C25FE1E24FC37 /* audio_session.cpp */; };
+		B7DDA52FA85C6E8A67F783D4 /* OggOpusFilePlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA7D197041F021B668C30091 /* OggOpusFilePlayer.swift */; };
+		BBABB73315D03442A846814F /* frame_timeline.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 10A8A4D4A17D542C56688748 /* frame_timeline.cpp */; };
 		BBFCD349C4ED22A6D2B18C04 /* JKMeetingShared-macOS.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AEA0BBCE1CB025717BEAD504 /* JKMeetingShared-macOS.framework */; };
 		BCEAD26DBF450513F62B3F5B /* NativePCMFrameConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = D74DF88EEDB84A5A33BC5779 /* NativePCMFrameConverter.swift */; };
+		BD9AFF77FE90743C08A65958 /* OggOpusFileWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6D203E02702D7F8F64C15B9 /* OggOpusFileWriter.swift */; };
+		BE9E3074ACE65050826F2008 /* Opus.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = BB26B30348A23AE1A39058DE /* Opus.xcframework */; };
 		C3565BBFD43B214F7B32597D /* JKMeetingShared-iOS.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 64F93140A90F430964653064 /* JKMeetingShared-iOS.framework */; };
 		C6D59265B60DE44EFAC56FB9 /* audio_processor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FE540FEF426FE797AB29BA53 /* audio_processor.cpp */; };
 		C7B0388BF3B02C3AFE3B2D13 /* RecordingViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7394D30928B339716BBC979B /* RecordingViewModelTests.swift */; };
+		C7D3BFC89FCFAAD5FBE8532C /* ogg_opus_muxer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DA8A898EE4B26F4DF2E3988B /* ogg_opus_muxer.cpp */; };
+		CBCEEBDBD603B7929BB2A266 /* PCMRingBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E1740C292F980EE1F383B17 /* PCMRingBuffer.swift */; };
 		D5D278D690F1F7E5A6025A9E /* RecordingPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2464DE73164AE0A8160DC2 /* RecordingPipeline.swift */; };
 		D6705B34E8CBCF7D10D256CD /* RecordingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E2B4EE70A3268777A8C1111 /* RecordingView.swift */; };
 		D7FE783D69976E1758D25B0E /* AppleAudioPlaybackTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AE69541537064E816E89699 /* AppleAudioPlaybackTests.swift */; };
 		D9C400DD783A99CD607D9939 /* AudioCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 916C8E28C99C988A00EB9C05 /* AudioCapture.swift */; };
+		E560C1FDD283E220BB382B6D /* HLSPlaybackControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D35F354AF4699C2F7DA780E /* HLSPlaybackControllerTests.swift */; };
 		E93F54447AA389C19DC3DED7 /* audio_processor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FE540FEF426FE797AB29BA53 /* audio_processor.cpp */; };
+		EA8E24B117E6D39CC5A4225F /* opus_encoder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5BE3B61BA4809478DDA554D6 /* opus_encoder.cpp */; };
 		EB66D1C3B8AD0A10CBFEC66F /* JKMeeting-Bridging-Header.h in Headers */ = {isa = PBXBuildFile; fileRef = 0B8FA95EE4A460746FEA488D /* JKMeeting-Bridging-Header.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		F0CF82C92C6B21CCFC106484 /* Opus.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = BB26B30348A23AE1A39058DE /* Opus.xcframework */; };
+		F0F12ABBA1DFE14A48A43C5C /* audio_session.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A91F46835B6C25FE1E24FC37 /* audio_session.cpp */; };
 		F4E907D360A3D948E29EBCB9 /* CoreProcessorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E1A1A90048C5002255D94F8 /* CoreProcessorTests.swift */; };
+		FA70605256E9D83BE0F74A47 /* silence_detector.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 49508C148CB6630C8E0636E3 /* silence_detector.cpp */; };
+		FBE731BC5A471C36C39A43B0 /* HLSPlaybackController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4013FF9F80641CB20B475643 /* HLSPlaybackController.swift */; };
 		FC00B8E752B9249EE38FE287 /* AudioCaptureContractTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92764768954973033548BB77 /* AudioCaptureContractTests.swift */; };
 /* End PBXBuildFile section */
 
@@ -107,30 +145,47 @@
 		0AE69541537064E816E89699 /* AppleAudioPlaybackTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleAudioPlaybackTests.swift; sourceTree = "<group>"; };
 		0B8FA95EE4A460746FEA488D /* JKMeeting-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "JKMeeting-Bridging-Header.h"; sourceTree = "<group>"; };
 		10007269B3E9A1326F3E5FD5 /* RecordingAPIClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingAPIClientTests.swift; sourceTree = "<group>"; };
+		10A8A4D4A17D542C56688748 /* frame_timeline.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = frame_timeline.cpp; sourceTree = "<group>"; };
 		1FE5993ACD93479483EDE572 /* AppleRecordingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleRecordingManager.swift; sourceTree = "<group>"; };
 		1FF429AD5247DF2C4E896C01 /* AppleRecordingManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleRecordingManagerTests.swift; sourceTree = "<group>"; };
 		22723FEA8B119EB3E5C54172 /* RecordingState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingState.swift; sourceTree = "<group>"; };
+		2D35F354AF4699C2F7DA780E /* HLSPlaybackControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HLSPlaybackControllerTests.swift; sourceTree = "<group>"; };
 		2E1A1A90048C5002255D94F8 /* CoreProcessorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreProcessorTests.swift; sourceTree = "<group>"; };
+		3B23F58E939A92895E5458B4 /* OggOpusFilePlayerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OggOpusFilePlayerTests.swift; sourceTree = "<group>"; };
+		4013FF9F80641CB20B475643 /* HLSPlaybackController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HLSPlaybackController.swift; sourceTree = "<group>"; };
 		449D4C86FBAF6D33B6CE9699 /* JKMeeting-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "JKMeeting-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		486CC47CA338D8570CCC8B35 /* RecordingPipelineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingPipelineTests.swift; sourceTree = "<group>"; };
+		49508C148CB6630C8E0636E3 /* silence_detector.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = silence_detector.cpp; sourceTree = "<group>"; };
 		49DACF1CCFB81F7A9F560E6C /* CoreProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreProcessor.swift; sourceTree = "<group>"; };
 		4D10A749A2ABF1C68A8E3EAF /* JKMeetingApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JKMeetingApp.swift; sourceTree = "<group>"; };
 		4E301969990BFFB0A861FE1B /* AppleAudioFileWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleAudioFileWriter.swift; sourceTree = "<group>"; };
+		593764D717B74E0ACD0DEB5E /* streaming_resampler.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = streaming_resampler.cpp; sourceTree = "<group>"; };
+		5AF971F6D7089CA1F4362D05 /* ogg_opus_decoder.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ogg_opus_decoder.cpp; sourceTree = "<group>"; };
+		5BE3B61BA4809478DDA554D6 /* opus_encoder.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = opus_encoder.cpp; sourceTree = "<group>"; };
+		5E1740C292F980EE1F383B17 /* PCMRingBuffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PCMRingBuffer.swift; sourceTree = "<group>"; };
 		64F93140A90F430964653064 /* JKMeetingShared-iOS.framework */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.framework; path = "JKMeetingShared-iOS.framework"; sourceTree = BUILT_PRODUCTS_DIR; };
 		66443C8809D2051CDB598641 /* JKMeeting-iOSTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = "JKMeeting-iOSTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		667A953C54ED39765B62560B /* ogg_opus_encoder.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ogg_opus_encoder.cpp; sourceTree = "<group>"; };
 		6E2B4EE70A3268777A8C1111 /* RecordingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingView.swift; sourceTree = "<group>"; };
 		6F4260194737082A705A8285 /* CoreModuleMarker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreModuleMarker.swift; sourceTree = "<group>"; };
 		7394D30928B339716BBC979B /* RecordingViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingViewModelTests.swift; sourceTree = "<group>"; };
+		7792A95FB8D2D7633AE6CC02 /* ogg_packet_reader.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ogg_packet_reader.cpp; sourceTree = "<group>"; };
 		7EF397605F96DBEDD8B38910 /* RecordingAPIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingAPIClient.swift; sourceTree = "<group>"; };
 		869B7BFC02D7349ADE1D2D02 /* AudioCaptureLifecycle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioCaptureLifecycle.swift; sourceTree = "<group>"; };
+		8DBBB1804423B3687303851E /* OggOpusFileWriterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OggOpusFileWriterTests.swift; sourceTree = "<group>"; };
 		916C8E28C99C988A00EB9C05 /* AudioCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioCapture.swift; sourceTree = "<group>"; };
 		92764768954973033548BB77 /* AudioCaptureContractTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioCaptureContractTests.swift; sourceTree = "<group>"; };
 		92C8FF12CB96FA3F6CBED272 /* RecordingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingViewModel.swift; sourceTree = "<group>"; };
 		9A18AAF5F99930A8FD21C1C2 /* JKMeeting-iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "JKMeeting-iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		A91F46835B6C25FE1E24FC37 /* audio_session.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = audio_session.cpp; sourceTree = "<group>"; };
 		AEA0BBCE1CB025717BEAD504 /* JKMeetingShared-macOS.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = "JKMeetingShared-macOS.framework"; sourceTree = BUILT_PRODUCTS_DIR; };
 		B0EC5A5F134D4F639878EC89 /* AppleAudioFileWriterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleAudioFileWriterTests.swift; sourceTree = "<group>"; };
+		B6D203E02702D7F8F64C15B9 /* OggOpusFileWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OggOpusFileWriter.swift; sourceTree = "<group>"; };
+		BA7D197041F021B668C30091 /* OggOpusFilePlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OggOpusFilePlayer.swift; sourceTree = "<group>"; };
+		BB26B30348A23AE1A39058DE /* Opus.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = Opus.xcframework; path = third_party/Opus.xcframework; sourceTree = "<group>"; };
 		D1ED0A61E58E50EEB75899AC /* RecordingStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingStateTests.swift; sourceTree = "<group>"; };
 		D74DF88EEDB84A5A33BC5779 /* NativePCMFrameConverter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativePCMFrameConverter.swift; sourceTree = "<group>"; };
+		DA8A898EE4B26F4DF2E3988B /* ogg_opus_muxer.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ogg_opus_muxer.cpp; sourceTree = "<group>"; };
 		DD2464DE73164AE0A8160DC2 /* RecordingPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingPipeline.swift; sourceTree = "<group>"; };
 		E371F6CE63E7DCF03F760CCF /* AppleAudioCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleAudioCapture.swift; sourceTree = "<group>"; };
 		ECDC87CBDB5C7E4C29FDF611 /* JKMeeting-macOSTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "JKMeeting-macOSTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -138,11 +193,28 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		030687120284B3C2E36DF0BA /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A915688395FF26DE72FBE355 /* Opus.xcframework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0736D6896D734A1630E1000D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F0CF82C92C6B21CCFC106484 /* Opus.xcframework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		318023CDAE15AA7A86FEF2B2 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				BBFCD349C4ED22A6D2B18C04 /* JKMeetingShared-macOS.framework in Frameworks */,
+				49EF11D35628FE8921F6F55C /* Opus.xcframework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -151,6 +223,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				AED87542C592914F9D340D57 /* JKMeetingShared-iOS.framework in Frameworks */,
+				BE9E3074ACE65050826F2008 /* Opus.xcframework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -159,6 +232,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				914044B298F5B153DCB6E310 /* JKMeetingShared-macOS.framework in Frameworks */,
+				B3EF04DB7FBB24BE5B35B35F /* Opus.xcframework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -167,6 +241,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C3565BBFD43B214F7B32597D /* JKMeetingShared-iOS.framework in Frameworks */,
+				87DB1051821E9FFFFA3CE593 /* Opus.xcframework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -181,6 +256,9 @@
 				1FF429AD5247DF2C4E896C01 /* AppleRecordingManagerTests.swift */,
 				92764768954973033548BB77 /* AudioCaptureContractTests.swift */,
 				2E1A1A90048C5002255D94F8 /* CoreProcessorTests.swift */,
+				2D35F354AF4699C2F7DA780E /* HLSPlaybackControllerTests.swift */,
+				3B23F58E939A92895E5458B4 /* OggOpusFilePlayerTests.swift */,
+				8DBBB1804423B3687303851E /* OggOpusFileWriterTests.swift */,
 				10007269B3E9A1326F3E5FD5 /* RecordingAPIClientTests.swift */,
 				486CC47CA338D8570CCC8B35 /* RecordingPipelineTests.swift */,
 				D1ED0A61E58E50EEB75899AC /* RecordingStateTests.swift */,
@@ -210,6 +288,7 @@
 				CEDC5BF1D4BD354A44693E01 /* JKMeeting */,
 				5D538DE1291972264B97A761 /* Shared */,
 				2A6729813F870FCDB2493408 /* SharedTests */,
+				C99B4C5A26F6869A444FA175 /* Frameworks */,
 				38314143273FB10F4E9AEABE /* Products */,
 			);
 			sourceTree = "<group>";
@@ -218,6 +297,15 @@
 			isa = PBXGroup;
 			children = (
 				FE540FEF426FE797AB29BA53 /* audio_processor.cpp */,
+				A91F46835B6C25FE1E24FC37 /* audio_session.cpp */,
+				10A8A4D4A17D542C56688748 /* frame_timeline.cpp */,
+				5AF971F6D7089CA1F4362D05 /* ogg_opus_decoder.cpp */,
+				667A953C54ED39765B62560B /* ogg_opus_encoder.cpp */,
+				DA8A898EE4B26F4DF2E3988B /* ogg_opus_muxer.cpp */,
+				7792A95FB8D2D7633AE6CC02 /* ogg_packet_reader.cpp */,
+				5BE3B61BA4809478DDA554D6 /* opus_encoder.cpp */,
+				49508C148CB6630C8E0636E3 /* silence_detector.cpp */,
+				593764D717B74E0ACD0DEB5E /* streaming_resampler.cpp */,
 			);
 			path = src;
 			sourceTree = "<group>";
@@ -241,7 +329,11 @@
 				1FE5993ACD93479483EDE572 /* AppleRecordingManager.swift */,
 				916C8E28C99C988A00EB9C05 /* AudioCapture.swift */,
 				869B7BFC02D7349ADE1D2D02 /* AudioCaptureLifecycle.swift */,
+				4013FF9F80641CB20B475643 /* HLSPlaybackController.swift */,
 				D74DF88EEDB84A5A33BC5779 /* NativePCMFrameConverter.swift */,
+				BA7D197041F021B668C30091 /* OggOpusFilePlayer.swift */,
+				B6D203E02702D7F8F64C15B9 /* OggOpusFileWriter.swift */,
+				5E1740C292F980EE1F383B17 /* PCMRingBuffer.swift */,
 				7EF397605F96DBEDD8B38910 /* RecordingAPIClient.swift */,
 				DD2464DE73164AE0A8160DC2 /* RecordingPipeline.swift */,
 				22723FEA8B119EB3E5C54172 /* RecordingState.swift */,
@@ -281,6 +373,14 @@
 				B50FC602A094DA11159CF16A /* Features */,
 			);
 			path = App;
+			sourceTree = "<group>";
+		};
+		C99B4C5A26F6869A444FA175 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				BB26B30348A23AE1A39058DE /* Opus.xcframework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 		CEDC5BF1D4BD354A44693E01 /* JKMeeting */ = {
@@ -389,6 +489,7 @@
 			buildPhases = (
 				E23146018025223BDA66E890 /* Headers */,
 				002F1F6CAFA5A45C62679DF0 /* Sources */,
+				030687120284B3C2E36DF0BA /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -426,6 +527,7 @@
 			buildPhases = (
 				5BC92AE50EC80F762E47DB61 /* Headers */,
 				AD65EA81F5C64DD6134B3301 /* Sources */,
+				0736D6896D734A1630E1000D /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -486,13 +588,26 @@
 				5DCB3BC66E6F1AB3A658FCF7 /* AudioCaptureLifecycle.swift in Sources */,
 				141888241D5B90EF09109EB3 /* CoreModuleMarker.swift in Sources */,
 				54C248D148FFCE225173E59F /* CoreProcessor.swift in Sources */,
+				74FC98E54628BB55D2BD1F9F /* HLSPlaybackController.swift in Sources */,
 				12DF37CE06625FDD5446605A /* JKMeetingCore.mm in Sources */,
 				BCEAD26DBF450513F62B3F5B /* NativePCMFrameConverter.swift in Sources */,
+				B7DDA52FA85C6E8A67F783D4 /* OggOpusFilePlayer.swift in Sources */,
+				BD9AFF77FE90743C08A65958 /* OggOpusFileWriter.swift in Sources */,
+				663CC28B0EDE34706A27C8A9 /* PCMRingBuffer.swift in Sources */,
 				103A9AA0A82FE23D2F44BD40 /* RecordingAPIClient.swift in Sources */,
 				D5D278D690F1F7E5A6025A9E /* RecordingPipeline.swift in Sources */,
 				A8D2FF6FF1874D5D30158153 /* RecordingState.swift in Sources */,
 				B4F84AF465A24BE514410A8B /* RecordingViewModel.swift in Sources */,
 				E93F54447AA389C19DC3DED7 /* audio_processor.cpp in Sources */,
+				B50BBFEA80B0E658A8D5FD0D /* audio_session.cpp in Sources */,
+				54865D8FE119DE24C7E2ED1F /* frame_timeline.cpp in Sources */,
+				19670FF7364BC10D8E468E99 /* ogg_opus_decoder.cpp in Sources */,
+				5431199419F15BCF5170DD18 /* ogg_opus_encoder.cpp in Sources */,
+				C7D3BFC89FCFAAD5FBE8532C /* ogg_opus_muxer.cpp in Sources */,
+				1F6A082DDADE340C73840E9B /* ogg_packet_reader.cpp in Sources */,
+				EA8E24B117E6D39CC5A4225F /* opus_encoder.cpp in Sources */,
+				FA70605256E9D83BE0F74A47 /* silence_detector.cpp in Sources */,
+				41A18966E87376FD50B8D6A2 /* streaming_resampler.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -523,6 +638,9 @@
 				1F383E9C5542D0E7C9C350EA /* AppleRecordingManagerTests.swift in Sources */,
 				B300E6A3E6DB07765044AD91 /* AudioCaptureContractTests.swift in Sources */,
 				F4E907D360A3D948E29EBCB9 /* CoreProcessorTests.swift in Sources */,
+				E560C1FDD283E220BB382B6D /* HLSPlaybackControllerTests.swift in Sources */,
+				2F17DDF92AC38C47A07A9ADF /* OggOpusFilePlayerTests.swift in Sources */,
+				5873B43B804C1FCB86EC4A54 /* OggOpusFileWriterTests.swift in Sources */,
 				AB7D7745FBE0F0310C2773C6 /* RecordingAPIClientTests.swift in Sources */,
 				00054AD62F830BAA9E9006ED /* RecordingPipelineTests.swift in Sources */,
 				1400D374CE2C8BC4635E5EA0 /* RecordingStateTests.swift in Sources */,
@@ -539,6 +657,9 @@
 				18BB3957F01C27380C3EA469 /* AppleRecordingManagerTests.swift in Sources */,
 				FC00B8E752B9249EE38FE287 /* AudioCaptureContractTests.swift in Sources */,
 				416925EBA3820E927B02A18D /* CoreProcessorTests.swift in Sources */,
+				B21D3C6B75FDFAB8BB4C83A9 /* HLSPlaybackControllerTests.swift in Sources */,
+				5A76E5D1D59D95A8C7864275 /* OggOpusFilePlayerTests.swift in Sources */,
+				56E8069367006E13509E67E2 /* OggOpusFileWriterTests.swift in Sources */,
 				7D896AE9CB271C6660B83FCC /* RecordingAPIClientTests.swift in Sources */,
 				1BF6695B70C677500980CEA5 /* RecordingPipelineTests.swift in Sources */,
 				B22363761586DAB89D5845B6 /* RecordingStateTests.swift in Sources */,
@@ -558,13 +679,26 @@
 				9ACE7EECE336CBDF29D7979A /* AudioCaptureLifecycle.swift in Sources */,
 				59B7217CBC3E8BFF96465DAE /* CoreModuleMarker.swift in Sources */,
 				9965A0828B0C7DE34F1D1A8A /* CoreProcessor.swift in Sources */,
+				FBE731BC5A471C36C39A43B0 /* HLSPlaybackController.swift in Sources */,
 				2C30F5C33C83855A3C4D40DA /* JKMeetingCore.mm in Sources */,
 				9CF34E3215BCD9E4FD15E50D /* NativePCMFrameConverter.swift in Sources */,
+				96E80929DA6F6FD50C2A36C1 /* OggOpusFilePlayer.swift in Sources */,
+				41825B2EBC1F3F6B2FC7FFE3 /* OggOpusFileWriter.swift in Sources */,
+				CBCEEBDBD603B7929BB2A266 /* PCMRingBuffer.swift in Sources */,
 				426307FF19C9DB226D388B8E /* RecordingAPIClient.swift in Sources */,
 				78577999D2B7DD8171327B57 /* RecordingPipeline.swift in Sources */,
 				A47B71D7F11EF3A6FBBC5CA3 /* RecordingState.swift in Sources */,
 				676037A63F42816239DBDE87 /* RecordingViewModel.swift in Sources */,
 				C6D59265B60DE44EFAC56FB9 /* audio_processor.cpp in Sources */,
+				F0F12ABBA1DFE14A48A43C5C /* audio_session.cpp in Sources */,
+				BBABB73315D03442A846814F /* frame_timeline.cpp in Sources */,
+				01432D89EEFC7506190EB4E2 /* ogg_opus_decoder.cpp in Sources */,
+				8E817CD7866FCC1915D737B6 /* ogg_opus_encoder.cpp in Sources */,
+				466FFF19918C35D85BF822E0 /* ogg_opus_muxer.cpp in Sources */,
+				8193FB3795BF45EEC0C59327 /* ogg_packet_reader.cpp in Sources */,
+				523F412F1FC8D12555E63EE5 /* opus_encoder.cpp in Sources */,
+				9EBD9FF4D7B789D16AE9C9CE /* silence_detector.cpp in Sources */,
+				9E80F433F9A5F46C965B120F /* streaming_resampler.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -603,6 +737,10 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"third_party\"",
+				);
 				GENERATE_INFOPLIST_FILE = YES;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -666,7 +804,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				HEADER_SEARCH_PATHS = "$(inherited) $(SRCROOT)/../core/include";
+				HEADER_SEARCH_PATHS = "$(inherited) $(SRCROOT)/../core/include $(SRCROOT)/../core/third_party/opus/include";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
@@ -685,7 +823,10 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = "App/Resources/JKMeeting-macOS.entitlements";
 				COMBINE_HIDPI_IMAGES = YES;
-				FRAMEWORK_SEARCH_PATHS = "$(inherited) $(BUILT_PRODUCTS_DIR)";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited) $(BUILT_PRODUCTS_DIR)",
+					"\"third_party\"",
+				);
 				INFOPLIST_FILE = "App/Resources/Info-macOS.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -702,7 +843,10 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				FRAMEWORK_SEARCH_PATHS = "$(inherited) $(BUILT_PRODUCTS_DIR)";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited) $(BUILT_PRODUCTS_DIR)",
+					"\"third_party\"",
+				);
 				INFOPLIST_FILE = "App/Resources/Info-iOS.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -725,6 +869,10 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"third_party\"",
+				);
 				GENERATE_INFOPLIST_FILE = YES;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -751,6 +899,10 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"third_party\"",
+				);
 				GENERATE_INFOPLIST_FILE = YES;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -771,7 +923,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "";
-				FRAMEWORK_SEARCH_PATHS = "$(inherited) $(BUILT_PRODUCTS_DIR)";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited) $(BUILT_PRODUCTS_DIR)",
+					"\"third_party\"",
+				);
 				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -790,7 +945,10 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				FRAMEWORK_SEARCH_PATHS = "$(inherited) $(BUILT_PRODUCTS_DIR)";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited) $(BUILT_PRODUCTS_DIR)",
+					"\"third_party\"",
+				);
 				INFOPLIST_FILE = "App/Resources/Info-iOS-Debug.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -809,7 +967,10 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = "App/Resources/JKMeeting-macOS.entitlements";
 				COMBINE_HIDPI_IMAGES = YES;
-				FRAMEWORK_SEARCH_PATHS = "$(inherited) $(BUILT_PRODUCTS_DIR)";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited) $(BUILT_PRODUCTS_DIR)",
+					"\"third_party\"",
+				);
 				INFOPLIST_FILE = "App/Resources/Info-macOS-Debug.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -873,7 +1034,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				HEADER_SEARCH_PATHS = "$(inherited) $(SRCROOT)/../core/include";
+				HEADER_SEARCH_PATHS = "$(inherited) $(SRCROOT)/../core/include $(SRCROOT)/../core/third_party/opus/include";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
@@ -892,7 +1053,10 @@
 			buildSettings = {
 				BUNDLE_LOADER = "";
 				COMBINE_HIDPI_IMAGES = YES;
-				FRAMEWORK_SEARCH_PATHS = "$(inherited) $(BUILT_PRODUCTS_DIR)";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited) $(BUILT_PRODUCTS_DIR)",
+					"\"third_party\"",
+				);
 				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -909,7 +1073,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "";
-				FRAMEWORK_SEARCH_PATHS = "$(inherited) $(BUILT_PRODUCTS_DIR)";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited) $(BUILT_PRODUCTS_DIR)",
+					"\"third_party\"",
+				);
 				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -928,7 +1095,10 @@
 			buildSettings = {
 				BUNDLE_LOADER = "";
 				COMBINE_HIDPI_IMAGES = YES;
-				FRAMEWORK_SEARCH_PATHS = "$(inherited) $(BUILT_PRODUCTS_DIR)";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited) $(BUILT_PRODUCTS_DIR)",
+					"\"third_party\"",
+				);
 				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -950,6 +1120,10 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"third_party\"",
+				);
 				GENERATE_INFOPLIST_FILE = YES;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = (

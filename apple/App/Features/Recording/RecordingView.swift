@@ -86,6 +86,7 @@ struct RecordingView: View {
                     Text("转写结果").font(.headline)
                     Text(viewModel.transcriptionText ?? "（无语音内容）")
                         .textSelection(.enabled)
+                    remotePlaybackSection
                 case .failed(let message):
                     Text(message).foregroundStyle(.red)
                     Button("重新上传并转写", action: viewModel.startTranscription)
@@ -94,6 +95,19 @@ struct RecordingView: View {
             .multilineTextAlignment(.center)
         default:
             EmptyView()
+        }
+    }
+
+    @ViewBuilder
+    private var remotePlaybackSection: some View {
+        if let remote = viewModel.remotePlayback {
+            if remote.isHLSReady {
+                RemoteHLSControls(playback: viewModel.hlsPlayback, viewModel: viewModel)
+            } else if remote.transcodeStatus == "failed" {
+                Text("服务端转码失败，仅可本地回放").foregroundStyle(.secondary)
+            } else if remote.transcodeStatus != "none" {
+                ProgressView("服务端正在生成多码率回放")
+            }
         }
     }
 
@@ -135,5 +149,40 @@ struct RecordingView: View {
                 .foregroundStyle(.secondary)
         }
         .font(.footnote)
+    }
+}
+
+/// 远程 HLS 回放与码率档位选择；单独观察 `HLSPlaybackController`，否则嵌套对象的变化不会刷新界面。
+private struct RemoteHLSControls: View {
+    @ObservedObject var playback: HLSPlaybackController
+    let viewModel: RecordingViewModel
+
+    var body: some View {
+        VStack(spacing: 8) {
+            Button(playback.isPlaying ? "停止远程回放" : "远程 HLS 回放") {
+                if playback.isPlaying {
+                    viewModel.stopRemote()
+                } else {
+                    Task { await viewModel.playRemote() }
+                }
+            }
+            .buttonStyle(.bordered)
+            if playback.isPlaying, !playback.variants.isEmpty {
+                Picker("码率", selection: Binding(get: { playback.selectedVariant }, set: { playback.select($0) })) {
+                    Text("自动").tag(HLSVariant?.none)
+                    ForEach(playback.variants, id: \.peakBitRate) { variant in
+                        Text("\(variant.kbps) kbps").tag(HLSVariant?.some(variant))
+                    }
+                }
+                .pickerStyle(.segmented)
+                Text(statusLine).font(.footnote).foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var statusLine: String {
+        let current = playback.indicatedBitrate.map { "当前档位 \(Int($0 / 1000)) kbps" } ?? "等待档位信息"
+        guard let latency = playback.lastSwitchLatencyMs else { return current }
+        return "\(current) · 切换耗时 \(Int(latency)) ms"
     }
 }

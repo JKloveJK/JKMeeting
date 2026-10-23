@@ -15,12 +15,25 @@ public struct CapturedPCMFrame: Equatable, Sendable {
     public let sampleRate: Int
     public let channels: Int
     public let timestampMs: Int64
+    /// 采集样本位置（输入采样率下的样本数），由 core 时间轴检测丢帧与重叠。
+    public let sampleTime: Int64?
+    /// 采集回调到达时刻（单调时钟纳秒），用于抖动统计。
+    public let hostTimeNs: Int64?
 
-    public init(pcmData: Data, sampleRate: Int, channels: Int, timestampMs: Int64) {
+    public init(
+        pcmData: Data,
+        sampleRate: Int,
+        channels: Int,
+        timestampMs: Int64,
+        sampleTime: Int64? = nil,
+        hostTimeNs: Int64? = nil
+    ) {
         self.pcmData = pcmData
         self.sampleRate = sampleRate
         self.channels = channels
         self.timestampMs = timestampMs
+        self.sampleTime = sampleTime
+        self.hostTimeNs = hostTimeNs
     }
 }
 
