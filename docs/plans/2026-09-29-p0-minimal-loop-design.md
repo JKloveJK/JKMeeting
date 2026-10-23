@@ -3,7 +3,7 @@
 - 日期：2026-09-29（架构修正版）
 - 阶段：P0（预估 **4 周** —— 因 C++ core + 桥接与 ASR 同时在 P0）
 - 关联文档：[客户端全栈学习路线](../客户端全栈学习路线.md)
-- 状态：**实施中**（截至 2026-10-04：服务端合成音频经上传、ASR 和回放 URL 的本机链路已复验；Apple App 已有手动转写入口并在模拟器注入运行时配置，真实录音从 App 上传并显示文字、物理设备验收与四项基线尚未验证）
+- 状态：**本机闭环与四项性能基线已完成**（截至 2026-10-21：C++ core、ObjC++ bridge、Apple 双端采集/限时/中断/回放/手动转写、Go 服务端 + Outbox 崩溃回收 + Whisper 异步转写均已验证，四项性能基线已建立并记录于 [指标台账](../metrics.md) 与 [基线报告](../reports/2026-10-21-p0-baseline-report.md)；仅 Mac/iPhone 物理设备实机麦克风与局域网联调留待硬件实测）
 
 ---
 
@@ -20,9 +20,9 @@ P0 的实现必须遵守根目录 [AGENTS.md](../../AGENTS.md)：先声明目标
 | 1. C++ core + Apple bridge | **基础实现已完成** | `make test-core`、`make test-apple-bridge`、双端 Xcode 构建及 `CoreProcessor` 确定性单测通过 | 真实麦克风 PCM 经 bridge/core 的设备验证归步骤 5 |
 | 2. 本地服务底座 | **已完成（既有验证）** | PostgreSQL、Redis、SeaweedFS 有 `healthy` 验证记录 | 启动端到端测试前需重新确认服务健康 |
 | 3. Go 录音 API | **已完成 P0 本地接口** | migration、创建、预签名 PUT/GET、complete、查询、回放 URL 与 API 冒烟通过 | 固定 Bearer token 仅限 P0；回放 URL 可获取不等于客户端已接入 |
-| 4. 异步 ASR | **已完成服务端正常链路** | Whisper base、`whisper-server`、asynq Worker；真实 `.m4a` 从 `uploaded` 进入 `done` 并写入文本 | outbox 认领后进程崩溃时，`dispatching` 事件尚无自动回收路径；RTF 基线未测 |
-| 5. Apple 采集、落盘与回放 | **进行中（实现与单测就绪，验收未完成）** | 双端采集、原生 PCM 转换、core pipeline、AAC/m4a 文件、本地播放与 SwiftUI 已有代码；iOS 26.3 Simulator 与 macOS XCTest 各 20 项通过；用户反馈模拟器中格式崩溃看上去已消失 | Mac 本机与 iPhone 真机完成录制→回读→播放 smoke；实现并验证 5 分钟自动停止、平台中断与文件收尾、权限拒绝引导；核对停止时尾帧及处理队列有界性 |
-| 6. 客户端对接与端到端基线 | **进行中（代码已接入，用户流未验收）** | App 有手动“上传并转写”入口及创建、PUT、complete、轮询实现；2026-10-04 模拟器进程已注入本机 API/S3 配置，合成音频从服务端走到 `done`，预签名 GET 返回音频 | 请在已配置的模拟器重新录音并点击上传以观察 UI 文本；Mac/iPhone 实机、断网重试、四项指标基线仍待完成；预签名远程回放只在服务端验证，本地录音直接播放 |
+| 4. 异步 ASR | **已完成** | Whisper base、`whisper-server`、asynq Worker、outbox 陈旧 `dispatching` 自动回收与重复 TaskID 幂等收敛单测通过；30s 真实语音 RTF P95 `0.0292` | 真机局域网环境待实机联调时顺带复核 |
+| 5. Apple 采集、落盘与回放 | **已完成（本机与模拟器验证通过）** | 双端采集、原生 PCM 转换、core pipeline、AAC/m4a 文件、5 分钟自动停止、中断收尾、本地播放与 SwiftUI 已完成；iOS Simulator 与 macOS XCTest 通过；30s 音频 core 耗时占比 P95 `0.222%` | Mac 本机麦克风与 iPhone 物理真机 smoke 待硬件实测 |
+| 6. 客户端对接与端到端基线 | **已完成（本机四项基线已建立）** | App 手动“上传并转写”入口及创建、PUT、complete、轮询实现完备；四项基线（1.2 MB 上传 P95 `25.61 ms`、ASR RTF P95 `0.0292`、30s 语音松手到文本服务端 P95 `1.72 s` / 客户端 2s 轮询感知 P95 `2.04 s`、core 耗时占比 P95 `0.222%`）已实测入账 | Mac/iPhone 物理真机与局域网手动断网体验待硬件配合验证 |
 
 > 当前本地 S3 兼容对象存储采用 SeaweedFS，详见 ADR 0004；不再使用原计划中的 MinIO。
 
@@ -83,10 +83,11 @@ Apple 双端工程、确定性 PCM 自检、采集与本地回放代码均已落
 
 | 方法 | 路径 | 请求 | 响应 |
 | --- | --- | --- | --- |
-| POST | `/v1/recordings` | `{duration_ms, size_bytes, content_type}` | `{recording_id, upload_url, upload_expires_at}` |
+| POST | `/v1/recordings` | `{duration_ms, size_bytes, content_type}`（P2-2 起 `content_type` 仅限 `audio/mp4` / `audio/ogg`，见 ADR 0006） | `{recording_id, upload_url, upload_expires_at}` |
 | POST | `/v1/recordings/{id}/complete` | `{}` | `{recording_id, status}` |
 | GET | `/v1/recordings/{id}` | — | `{recording_id, status, duration_ms, transcript, error_message}` |
-| GET | `/v1/recordings/{id}/playback` | — | `{playback_url, expires_at}` |
+| GET | `/v1/recordings/{id}/playback` | — | `{playback_url, expires_at}`（P2-4 起增加 `transcode_status`，就绪时增加 `hls_url`、`hls_variants_kbps`，见 ADR 0007） |
+| GET | `/v1/hls/{id}/master.m3u8` 等（P2-4 新增） | — | 免 Bearer、URL 签名鉴权的 HLS playlist，见 ADR 0007 |
 
 鉴权：P0 用固定 Bearer token，完整用户体系在 P1。
 
@@ -263,11 +264,12 @@ public:
 | --- | --- |
 | 登录注册、多用户 | P1（P0 用固定 token） |
 | 后台录音、断点续传、边录边传 | P1 |
-| 转码、HLS、实时流 | P5 |
+| 服务端转码、多码率 HLS | P2（与路线文档一致，2026-10-22 修订） |
+| 实时流 | P5 |
 | 摘要 / 待办 / RAG / MCP | P3 |
 | 安卓端 | P4 |
-| HTTPS、域名、云部署、K8s | P2 部署环节 |
-| 完整 OpenTelemetry SDK | P2（P0 只用 `request_id` 贯穿日志） |
+| HTTPS、域名、云部署 | 路线文档归入 P1，但 P1 实施未纳入；P2 也不包含（2026-10-22 用户确认），待后续阶段排期；K8s 不做 |
+| 完整 OpenTelemetry SDK | P1 已落地 W3C `traceparent` 透传与 Prometheus 指标（P0 只用 `request_id` 贯穿日志） |
 | 引入 Opus / FFmpeg | P2 / P5（P0 用平台原生编解码） |
 | core 里的音频采集、播放、网络、文件 IO | **永不进 core** |
 
@@ -334,9 +336,9 @@ public:
 | 1 | **C++ core + 桥接打通** | **基础实现已完成** | macOS CTest、ObjC++ bridge、双端 Xcode 构建与 `CoreProcessor` 单测通过；设备真实采集调用归步骤 5 |
 | 2 | 起底座 | **已完成（既有验证）** | PostgreSQL、Redis、SeaweedFS 已有 `healthy` 记录；集成验收前复核运行状态 |
 | 3 | 通接口 | **已完成 P0 本地接口** | 4 个接口通过 curl 跑通创建、直传、确认、查询与预签名回放 URL |
-| 4 | 通 ASR | **已完成服务端正常链路** | Worker 处理真实 `.m4a` 并持久化转写文本；outbox `dispatching` 崩溃恢复待补 |
-| 5 | 通采集 | **进行中（代码与单测就绪）** | 双端 AVAudioEngine→core→m4a→本地播放代码已具备，iOS 26.3 Simulator/macOS XCTest 各 20 项通过；尚需 Mac/iPhone 真实设备 smoke、5 分钟自动停止、中断收尾和队列边界验证 |
-| 6 | 对接 | **进行中（客户端已编码，端到端待验收）** | App 已有手动上传、complete、文本轮询与本地回放；本机服务合成音频 ASR 冒烟通过，模拟器已按进程注入本机配置；用户录音→App 上传→文字、双端实测和四项基线仍待验证 |
+| 4 | 通 ASR | **已完成** | Worker 处理真实 `.m4a` 并持久化转写文本；outbox 陈旧 `dispatching` 回收与幂等投递已覆盖单测 |
+| 5 | 通采集 | **已完成（本机与模拟器验证通过）** | 双端 AVAudioEngine→core→m4a→本地播放、5 分钟自动停止、中断收尾和队列边界测试通过；30s core 耗时占比 P95 `0.222%` |
+| 6 | 对接 | **已完成（本机闭环与四项基线已建立）** | App 手动上传、complete、文本轮询与本地回放已就绪；四项性能基线已记录于 `docs/metrics.md` 与 `docs/reports/2026-10-21-p0-baseline-report.md`（Mac/iPhone 物理设备留待实机体验） |
 
 **第 1 步的时间盒是硬的。** 3 天（约 12 小时投入）内没打通 CMake + ObjC++ 桥接，就**先绕过去** —— 采集后直接写文件、不走 core，继续第 2–4 步，把 core 接入推到 P1。理由：桥接是纯工程体力活，卡住它不该拖住整条链路；而且它失败的信号很明确，不会影响后面的判断。
 
