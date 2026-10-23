@@ -65,6 +65,24 @@ func (repository *Repository) MarkUploadedAndCreateOutbox(ctx context.Context, r
 	if err != nil {
 		return false, err
 	}
+
+	// 转码与转写各自一条 outbox，互不阻塞；三条写入与状态变更同属一个事务。
+	if _, err = transaction.Exec(ctx, `
+		INSERT INTO transcode_jobs (recording_id, status) VALUES ($1, 'pending')`,
+		recordingID,
+	); err != nil {
+		return false, err
+	}
+	if _, err = transaction.Exec(ctx, `
+		INSERT INTO transcode_outbox (id, recording_id, task_id, request_id, status)
+		VALUES ($1, $2, $3, $4, 'pending')`,
+		uuid.New(),
+		recordingID,
+		"transcode:"+recordingID.String(),
+		requestID,
+	); err != nil {
+		return false, err
+	}
 	return true, transaction.Commit(ctx)
 }
 

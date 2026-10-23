@@ -91,3 +91,25 @@ func TestDispatchAllDrainsOlderPendingEventsBeforeReturning(t *testing.T) {
 		t.Fatalf("newer event was not dispatched last: got %s, want %s", store.dispatched[1], newerEvent.ID)
 	}
 }
+
+type conflictEnqueuer struct{}
+
+func (conflictEnqueuer) Enqueue(*asynq.Task, ...asynq.Option) (*asynq.TaskInfo, error) {
+	return nil, asynq.ErrTaskIDConflict
+}
+
+func TestDispatchOneMarksDispatchedWhenTaskAlreadyEnqueued(t *testing.T) {
+	event := &outbox.Event{ID: uuid.New(), RecordingID: uuid.New(), TaskID: "transcription:conflict", RequestID: "request-conflict", Status: outbox.StatusDispatching}
+	store := &fakeOutboxStore{event: event}
+	dispatcher := NewDispatcher(store, conflictEnqueuer{})
+
+	if err := dispatcher.DispatchOne(context.Background()); err != nil {
+		t.Fatalf("DispatchOne() error = %v", err)
+	}
+	if !store.dispatched {
+		t.Fatal("MarkDispatched() was not called on ErrTaskIDConflict")
+	}
+	if store.requeued {
+		t.Fatal("RequeueIfDispatching() should not be called on ErrTaskIDConflict")
+	}
+}

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"log/slog"
 
 	"github.com/hibiken/asynq"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -10,11 +11,16 @@ import (
 	"github.com/jiankailei/jkmeeting/server/internal/queue"
 	"github.com/jiankailei/jkmeeting/server/internal/recording"
 	"github.com/jiankailei/jkmeeting/server/internal/storage"
+	"github.com/jiankailei/jkmeeting/server/internal/transcode"
 	"github.com/jiankailei/jkmeeting/server/internal/transcribe"
 )
 
 func main() {
 	configValue, err := config.Load()
+	if err != nil {
+		log.Fatal(err)
+	}
+	ladder, err := transcode.ParseLadder(configValue.TranscodeBitrates)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -29,11 +35,31 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	asr := transcribe.NewClient(configValue.ASRBaseURL, configValue.ASRTimeout, 32<<20)
-	handler := transcribe.NewHandler(recording.NewRepository(pool), s3, asr)
+	recordings := recording.NewRepository(pool)
+	redis := asynq.RedisClientOpt{Addr: configValue.RedisAddr}
 
-	server := asynq.NewServer(asynq.RedisClientOpt{Addr: configValue.RedisAddr}, asynq.Config{Concurrency: 1})
+	// asynq 没有按队列的并发上限，因此转码使用独立 Server：并发互不占用，FFmpeg 再以 nice 降低 CPU 优先级。
+	ffmpeg := transcode.FFmpeg{Path: configValue.FFmpegPath, Nice: configValue.TranscodeNice, SegmentSeconds: 6}
+	transcoder := transcode.NewHandler(transcode.NewRepository(pool), recordings, s3, ffmpeg, ladder)
+	transcodeServer := asynq.NewServer(redis, asynq.Config{
+		Concurrency: configValue.TranscodeConcurrency,
+		Queues:      map[string]int{queue.QueueTranscode: 1},
+	})
+	transcodeMux := asynq.NewServeMux()
+	transcodeMux.HandleFunc(queue.TypeTranscode, transcoder.ProcessTask)
+	if err := transcodeServer.Start(transcodeMux); err != nil {
+		log.Fatal(err)
+	}
+	defer transcodeServer.Shutdown()
+	slog.Info("转码 Worker 已启动", "concurrency", configValue.TranscodeConcurrency, "nice", configValue.TranscodeNice,
+		"bitrates_kbps", transcode.LadderString(ladder))
+
+	asr := transcribe.NewClient(configValue.ASRBaseURL, configValue.ASRTimeout, 32<<20)
+	handler := transcribe.NewHandler(recordings, s3, asr)
+	server := asynq.NewServer(redis, asynq.Config{Concurrency: 1})
 	mux := asynq.NewServeMux()
 	mux.HandleFunc(queue.TypeTranscription, handler.ProcessTask)
-	log.Fatal(server.Run(mux))
+	if err := server.Run(mux); err != nil {
+		log.Print(err)
+	}
 }

@@ -104,6 +104,16 @@ func TestMarkUploadedAndCreateOutboxIsAtomic(t *testing.T) {
 	if outboxCount != 1 {
 		t.Fatalf("outbox count = %d, want 1", outboxCount)
 	}
+	var jobStatus string
+	var transcodeOutbox int
+	if err := pool.QueryRow(ctx, `
+		SELECT j.status, (SELECT count(*) FROM transcode_outbox o WHERE o.recording_id = j.recording_id AND o.request_id = $2)
+		FROM transcode_jobs j WHERE j.recording_id = $1`, recordingID, requestID).Scan(&jobStatus, &transcodeOutbox); err != nil {
+		t.Fatalf("query transcode job error = %v", err)
+	}
+	if jobStatus != "pending" || transcodeOutbox != 1 {
+		t.Fatalf("transcode job = %q outbox = %d, want pending and 1", jobStatus, transcodeOutbox)
+	}
 
 	updated, err = repository.MarkUploadedAndCreateOutbox(ctx, recordingID, requestID)
 	if err != nil {

@@ -71,3 +71,47 @@ func TestClaimPendingClaimsOnlyOnce(t *testing.T) {
 		t.Fatalf("MarkDispatched() error = %v", err)
 	}
 }
+
+func TestClaimPendingReclaimsStaleDispatchingEvent(t *testing.T) {
+	databaseURL := os.Getenv("DATABASE_URL")
+	if databaseURL == "" {
+		t.Skip("DATABASE_URL 未设置")
+	}
+	ctx := context.Background()
+	pool, err := pgxpool.New(ctx, databaseURL)
+	if err != nil {
+		t.Fatalf("pgxpool.New() error = %v", err)
+	}
+	t.Cleanup(pool.Close)
+	if _, err := pool.Exec(ctx, "DELETE FROM transcription_outbox"); err != nil {
+		t.Fatalf("clear outbox error = %v", err)
+	}
+
+	recordingID := uuid.New()
+	_, err = pool.Exec(ctx, `
+		INSERT INTO recordings (id, user_id, status, object_key, duration_ms, size_bytes, content_type)
+		VALUES ($1, 'p0-local-user', 'uploaded', $2, 1000, 4, 'audio/mp4')`,
+		recordingID,
+		"recordings/"+recordingID.String()+"/audio.m4a",
+	)
+	if err != nil {
+		t.Fatalf("insert recording error = %v", err)
+	}
+	eventID := uuid.New()
+	_, err = pool.Exec(ctx, `
+		INSERT INTO transcription_outbox (id, recording_id, task_id, request_id, status, claimed_at)
+		VALUES ($1, $2, $3, 'request-stale', 'dispatching', now() - interval '2 minutes')`,
+		eventID, recordingID, "transcription:"+recordingID.String())
+	if err != nil {
+		t.Fatalf("insert stale outbox error = %v", err)
+	}
+
+	repository := NewRepository(pool)
+	reclaimed, err := repository.ClaimPending(ctx)
+	if err != nil {
+		t.Fatalf("ClaimPending() error = %v", err)
+	}
+	if reclaimed == nil || reclaimed.ID != eventID {
+		t.Fatalf("ClaimPending() = %+v, want event %s", reclaimed, eventID)
+	}
+}

@@ -109,6 +109,30 @@ func (client *S3Client) DownloadToTemp(ctx context.Context, objectKey string, ma
 	return path, nil
 }
 
+func (client *S3Client) UploadFile(ctx context.Context, objectKey, path, contentType string) error {
+	if _, err := client.client.FPutObject(ctx, client.bucket, objectKey, path, minio.PutObjectOptions{ContentType: contentType}); err != nil {
+		return fmt.Errorf("上传 S3 对象失败：%w", err)
+	}
+	return nil
+}
+
+// ReadObject 读取小对象（如 HLS playlist），超过 maxBytes 视为错误。
+func (client *S3Client) ReadObject(ctx context.Context, objectKey string, maxBytes int64) ([]byte, error) {
+	object, err := client.client.GetObject(ctx, client.bucket, objectKey, minio.GetObjectOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("读取 S3 对象失败：%w", err)
+	}
+	defer object.Close()
+	body, err := io.ReadAll(io.LimitReader(object, maxBytes+1))
+	if err != nil {
+		return nil, fmt.Errorf("读取 S3 对象失败：%w", err)
+	}
+	if int64(len(body)) > maxBytes {
+		return nil, fmt.Errorf("S3 对象超过大小上限")
+	}
+	return body, nil
+}
+
 func (client *S3Client) Exists(ctx context.Context, objectKey string) (bool, error) {
 	_, err := client.client.StatObject(ctx, client.bucket, objectKey, minio.StatObjectOptions{})
 	if err == nil {

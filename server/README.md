@@ -6,8 +6,8 @@
 
 - PostgreSQL 保存录音状态、文本和错误信息。
 - SeaweedFS 仅通过 S3 兼容 API 保存音频对象。
-- Redis / asynq 保存转写任务。
-- Go API 与独立的 asynq Worker 分进程运行；Worker 从对象存储取音频并调用本机 `whisper-server` 转写。
+- Redis / asynq 保存转写任务（`default` 队列）和 HLS 转码任务（`transcode` 队列）。
+- Go API 与独立的 asynq Worker 分进程运行；Worker 从对象存储取音频并调用本机 `whisper-server` 转写，同一进程内另一个 `asynq.Server` 调用宿主机 FFmpeg 生成多码率 HLS（P2-4，见 [ADR 0007](../docs/decisions/0007-hls-transcode-signed-playlist.md)）。
 - 客户端音频通过预签名 PUT URL 直传 SeaweedFS。
 
 ## 运行依赖
@@ -29,26 +29,45 @@ make run-server           # 独立终端，HTTP API
 
 | 方法 | 路径 | 语义 |
 | --- | --- | --- |
-| POST | `/v1/recordings` | 创建记录并返回预签名 PUT URL |
-| POST | `/v1/recordings/{id}/complete` | 确认对象存在，原子写入 outbox 并投递任务 |
+| POST | `/v1/recordings` | 创建记录并返回预签名 PUT URL（支持背压 `503` 与限流 `429`） |
+| POST | `/v1/recordings/{id}/complete` | 确认对象存在，原子写入 outbox 并投递任务（Redis 故障时优雅降级 `200 OK`） |
 | GET | `/v1/recordings/{id}` | 查询录音状态、文本和错误 |
-| GET | `/v1/recordings/{id}/playback` | 返回预签名 GET URL |
+| GET | `/v1/recordings/{id}/playback` | 返回原始文件预签名 GET URL `playback_url`，以及 `transcode_status`（`none` / `pending` / `processing` / `ready` / `failed`）；`ready` 时附带签名相对地址 `hls_url` 和 `hls_variants_kbps`，`failed` 时附带 `transcode_error` |
+| GET | `/v1/hls/{id}/master.m3u8`、`/v1/hls/{id}/{N}k/index.m3u8` | 免 Bearer，校验 `exp` + `sig`（15 分钟有效）；返回改写后的 playlist：子 playlist 带签名，init 段与分片为 S3 预签名地址；签名无效 `403`，路径非法 `400`，未就绪 `404` |
+| GET | `/healthz` | L7 探针（PostgreSQL 查询 + Redis `PING`），免鉴权，正常返回 `200`，异常返回 `503` |
+| GET | `/metrics` | Prometheus 文本指标端点（HTTP 直方图、慢查询计数、连接池水位、Outbox 积压、限流/背压计数） |
 
-所有接口要求：
+业务接口（`/v1/*`）要求：
 
 ```text
 Authorization: Bearer <API_BEARER_TOKEN>
 ```
 
-## 验证
+所有请求自动解析并透传 W3C `traceparent` 与 `X-Request-ID`。支持通过环境变量配置连接池、慢查询阈值、限流与背压：
+
+- `DB_MAX_CONNS`（默认 `25`）、`DB_MIN_CONNS`（默认 `2`）、`DB_ACQUIRE_TIMEOUT_MS`（默认 `3000`）
+- `SLOW_QUERY_THRESHOLD_MS`（默认 `50`）
+- `RATE_LIMIT_RPS`（默认 `2000`）、`RATE_LIMIT_BURST`（默认 `2000`）
+- `MAX_OUTBOX_BACKLOG`（默认 `50000`）、`OUTBOX_BATCH_SIZE`（默认 `64`）
+- Worker 转码：`FFMPEG_PATH`（默认 `ffmpeg`）、`TRANSCODE_CONCURRENCY`（默认 `1`）、`TRANSCODE_NICE`（默认 `10`）、`TRANSCODE_BITRATES_KBPS`（默认 `32,64,96`，须严格递增）
+
+迁移 `0003_add_transcode_jobs.sql` 新增 `transcode_jobs` 与 `transcode_outbox`。上传确认事务同时写入转写 outbox、转码任务和转码 outbox；历史录音没有转码任务，回放接口返回 `transcode_status=none`。
+
+## 验证与压测（P0 & P1）
 
 ```sh
 make migrate-server
 make test-server
 make smoke-server
+make load            # Go 压测工具（对本地 API 发起 200 并发压测）
+make p1-experiments  # P1 全套 6 项实验（并发梯度、连接池拐点、100万行 SQL、故障注入、10万积压背压）
 ```
 
-`smoke-server` 执行创建、直接上传、确认和查询。它不执行真实 ASR；`make run-whisper` 和 `make run-worker` 启动后，运行 `make smoke-asr` 可验证 `.m4a` 最终进入 `done` 并持久化文本。
+`smoke-server` 执行创建、直接上传、确认和查询。它不执行真实 ASR；`make run-whisper` 和 `make run-worker` 启动后，运行 `make smoke-asr` 可验证 `.m4a` 最终进入 `done` 并持久化文本；`AUDIO_FORMAT=ogg make smoke-asr` 改为上传由 core 编码的 Ogg Opus。
+
+`make smoke-hls` 上传 core 编码的 Ogg Opus，按状态变化打印转码与转写进度，校验未签名访问返回 `403`、签名 master 含 3 档、每档为 AAC 且实测码率接近目标；超时或失败时输出 `transcode_jobs`、`transcode_outbox` 与 Worker 日志。`LOOP_SECONDS=180` 可生成较长录音，用于客户端档位切换验证。转码 RTF 与转写干扰实验：`python3 server/scripts/p2-4-hls-bench.py`（需先加载 `.env`）。
+
+`POST /v1/recordings` 的 `content_type` 只接受精确的 `audio/mp4`（对象键 `audio.m4a`）和 `audio/ogg`（对象键 `audio.ogg`），其他值返回 `400`。预签名 PUT 会把 Content-Type 纳入签名，上传时必须使用同一个值。见 [ADR 0006](../docs/decisions/0006-opus-ogg-container.md)。
 
 ## Apple 客户端联调（仅可信开发网络）
 
