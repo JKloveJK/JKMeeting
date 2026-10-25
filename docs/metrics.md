@@ -50,10 +50,22 @@
 | 转码对转写延迟的影响 | FFmpeg 并行负载下 Whisper 推理延迟（直接请求 `/inference`，9.5 秒探针，每场景 `N=15`） | P95 劣化不超过 idle 的 20% | idle P95 `447 ms`；1×FFmpeg nice 10：`361 ms`；1×nice 0：`325 ms`；3×nice 0：`276 ms`，**无可测劣化** | 同上；whisper.cpp 走 Metal GPU，场景按顺序执行，背景负载从 38 降到 32 | `server/scripts/p2-4-hls-bench.py`；`output/p2-4-hls-bench.jsonl` | 已完成；差异在噪声范围内，纯 CPU 推理环境待复测 |
 | HLS 档位切换 | 设置 `preferredPeakBitRate` 到 access log `indicatedBitrate` 变为目标档的耗时 | 切换可生效并可测 | macOS：33→100 kbps `40～53 ms`，100→66 kbps `17～18 ms`；iOS Simulator：`73 ms` / `18 ms`；23.5 秒短样本起播后全部缓冲，切换不生效 | 2026-10-23，本机回环网络，180 秒录音 | `HLSPlaybackControllerTests`；`output/p2-4-hls-live-macos.log`、`output/p2-4-{macos,ios}-xctest.log` | 已完成；表示开始拉取新档分片，不等于听感切换时刻 |
 
-## 5. 后续阶段预登记
+## 5. P3 Agent 管道
+
+> P3-1 结果为**初步**：评测集标准答案由 AI 起草，尚待用户审核。
+
+| 指标 / 实验项 | 定义 | 目标/判据 | 实测结果 | 环境与输入 | 命令/证据 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 纪要要点召回率（文字模式） | 按类别严格匹配的要点覆盖数 / 要点总数（规则评分，不用 LLM 评判） | `≥ 80%` | 20 条：**88.6%**（93/105）；50 次连续调用：88.2%；决议 / 待办 / 观点：91.7% / 90.5% / 81.5% | 2026-10-23，Apple M1 Pro；Qwen2.5-7B-Instruct Q4_K_M，`llama-server -c 8192 -np 1`，温度 0；20 段合成中文会议 | `make eval-insights`；`output/p3-1-text-eval*.json*`；[P3-1 报告](reports/2026-10-23-p3-1-insights-report.md) | 初步通过；待审核答案 |
+| 结构化输出格式稳定性 | 连续 50 次调用中的格式失败次数（重试前统计） | `0` | **0/50**，没有发生重试 | 同上 | `make eval-insights EVAL_REPEAT=50`；`output/p3-1-repeat50*.json*` | 已完成 |
+| 单条纪要抽取延迟 | 从抽取开始到结果返回（文字模式，单槽位） | P95 `< 8 s` | P50 `12.5 s` / **P95 `15.5 s`**（50 次：`16.3 s`）；生成速度约 24 token/s，平均输出 270 token，约 90% 耗时在生成 | 同上；系统负载 100～190 | `llama-server` 的 `print_timing`；同上 | **未达标**；瓶颈与方案见报告 §3.3 |
+| 全链路召回率（音频模式） | `say` 合成 → 上传 → Whisper → LLM，按同一口径评分 | 跑通 ≥ 5 条，报告 ASR 影响 | **28.6%**（8/28）；转写里仍可找到的要点：原始 2/28，繁转简后 12/28 | 5 条，每条 38～44 秒，whisper ggml-base | `server/scripts/p3-audio-eval.sh`、`server/scripts/p3-asr-ceiling.py`；`output/p3-1-audio-*`、`output/p3-1-asr-ceiling.jsonl` | 已完成；瓶颈在 ASR（繁体输出、同音字、人名） |
+| 单段纪要 token 消耗 | 每段会议的 prompt / completion token | 记录 | 平均 301 / 270，1 次调用 | 约 250 字、40 秒的会议 | 同上 | 已完成 |
+
+## 6. 后续阶段预登记
 
 | 阶段 | 指标 | 触发条件 | 当前状态 |
 | --- | --- | --- | --- |
 | P2 | 真机丢帧率、真机回放首帧、弱网自动切档 | 有真机或网络调节工具时 | P2-1～P2-4 已完成，结果见 §4；真机与弱网项未测 |
-| P3 | 结构化输出通过率、任务准确率、端到端 P95、单次成本 | 接入 LLM 或 RAG | 未开始 |
+| P3 | 结构化输出通过率、任务准确率、端到端 P95、单次成本 | 接入 LLM 或 RAG | P3-1 初步结果见 §5；P3-2 RAG、P3-3 MCP 未开始 |
 | P4 | iOS/Android 启动、采集、播放对比；core 改动量 | Android 接入 | 未开始 |

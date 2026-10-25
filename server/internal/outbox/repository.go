@@ -30,6 +30,8 @@ type Event struct {
 const (
 	TranscriptionTable = "transcription_outbox"
 	TranscodeTable     = "transcode_outbox"
+	AnalysisTable      = "analysis_outbox"
+	IndexTable         = "index_outbox"
 )
 
 // Repository 操作一张 outbox 表；表名只能取上面的常量，SQL 中不拼接外部输入。
@@ -44,6 +46,14 @@ func NewRepository(pool *pgxpool.Pool) *Repository {
 
 func NewTranscodeRepository(pool *pgxpool.Pool) *Repository {
 	return &Repository{pool: pool, table: TranscodeTable}
+}
+
+func NewAnalysisRepository(pool *pgxpool.Pool) *Repository {
+	return &Repository{pool: pool, table: AnalysisTable}
+}
+
+func NewIndexRepository(pool *pgxpool.Pool) *Repository {
+	return &Repository{pool: pool, table: IndexTable}
 }
 
 func (repository *Repository) Table() string { return repository.table }

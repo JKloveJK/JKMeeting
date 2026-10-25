@@ -48,6 +48,9 @@ type RecordingAPI struct {
 	transcodes            transcodeStore
 	objectReader          objectReader
 	hlsSigner             *HLSSigner
+	insights              insightsStore
+	asker                 asker
+	defaultTopK           int
 }
 
 type createRecordingRequest struct {
@@ -175,10 +178,14 @@ func (api *RecordingAPI) ServeHTTP(response http.ResponseWriter, request *http.R
 	switch {
 	case request.Method == http.MethodPost && request.URL.Path == "/v1/recordings":
 		api.createRecording(writer, request, tc)
+	case request.Method == http.MethodPost && request.URL.Path == "/v1/ask":
+		api.ask(writer, request, tc)
 	case request.Method == http.MethodPost && strings.HasPrefix(request.URL.Path, "/v1/recordings/") && strings.HasSuffix(request.URL.Path, "/complete"):
 		api.completeRecording(writer, request, tc)
 	case request.Method == http.MethodGet && strings.HasPrefix(request.URL.Path, "/v1/recordings/") && strings.HasSuffix(request.URL.Path, "/playback"):
 		api.playback(writer, request, tc)
+	case request.Method == http.MethodGet && strings.HasPrefix(request.URL.Path, "/v1/recordings/") && strings.HasSuffix(request.URL.Path, "/insights"):
+		api.getInsights(writer, request, tc)
 	case request.Method == http.MethodGet && strings.HasPrefix(request.URL.Path, "/v1/recordings/"):
 		api.getRecording(writer, request, tc)
 	default:
@@ -376,10 +383,14 @@ func classifyRoute(method, path string) string {
 	switch {
 	case method == http.MethodPost && path == "/v1/recordings":
 		return "POST /v1/recordings"
+	case method == http.MethodPost && path == "/v1/ask":
+		return "POST /v1/ask"
 	case method == http.MethodPost && strings.HasPrefix(path, "/v1/recordings/") && strings.HasSuffix(path, "/complete"):
 		return "POST /v1/recordings/{id}/complete"
 	case method == http.MethodGet && strings.HasPrefix(path, "/v1/recordings/") && strings.HasSuffix(path, "/playback"):
 		return "GET /v1/recordings/{id}/playback"
+	case method == http.MethodGet && strings.HasPrefix(path, "/v1/recordings/") && strings.HasSuffix(path, "/insights"):
+		return "GET /v1/recordings/{id}/insights"
 	case method == http.MethodGet && strings.HasPrefix(path, "/v1/recordings/"):
 		return "GET /v1/recordings/{id}"
 	case method == http.MethodGet && strings.HasPrefix(path, "/v1/hls/"):

@@ -38,7 +38,7 @@ func TestClaimForTranscriptionUsesLeaseToken(t *testing.T) {
 	if !claimed.Claimed || claimed.LeaseToken == uuid.Nil {
 		t.Fatalf("claim = %+v, want lease token", claimed)
 	}
-	if err := repository.MarkDoneWithLease(ctx, recordingID, uuid.New(), "stale result"); err != nil {
+	if err := repository.MarkDoneWithLease(ctx, recordingID, uuid.New(), "stale result", "request-stale"); err != nil {
 		t.Fatalf("stale MarkDoneWithLease() error = %v", err)
 	}
 	loaded, err := repository.FindByID(ctx, recordingID)
@@ -48,8 +48,34 @@ func TestClaimForTranscriptionUsesLeaseToken(t *testing.T) {
 	if loaded.Status != StatusTranscribing {
 		t.Fatalf("status after stale token = %q, want %q", loaded.Status, StatusTranscribing)
 	}
-	if err := repository.MarkDoneWithLease(ctx, recordingID, claimed.LeaseToken, "final text"); err != nil {
+	var staleInsights int
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM meeting_insights WHERE recording_id = $1`, recordingID).Scan(&staleInsights); err != nil {
+		t.Fatalf("query insights error = %v", err)
+	}
+	if staleInsights != 0 {
+		t.Fatalf("过期租约不得登记纪要任务，insights = %d", staleInsights)
+	}
+	if err := repository.MarkDoneWithLease(ctx, recordingID, claimed.LeaseToken, "final text", "request-done"); err != nil {
 		t.Fatalf("MarkDoneWithLease() error = %v", err)
+	}
+	var insightStatus, taskID, outboxRequest string
+	if err := pool.QueryRow(ctx, `
+		SELECT i.status, o.task_id, o.request_id
+		FROM meeting_insights i JOIN analysis_outbox o ON o.recording_id = i.recording_id
+		WHERE i.recording_id = $1`, recordingID).Scan(&insightStatus, &taskID, &outboxRequest); err != nil {
+		t.Fatalf("query analysis outbox error = %v", err)
+	}
+	if insightStatus != "pending" || taskID != "analysis:"+recordingID.String() || outboxRequest != "request-done" {
+		t.Fatalf("insights = %q task = %q request = %q", insightStatus, taskID, outboxRequest)
+	}
+	var indexStatus, indexTask string
+	if err := pool.QueryRow(ctx, `
+		SELECT j.status, o.task_id FROM transcript_index_jobs j JOIN index_outbox o ON o.recording_id = j.recording_id
+		WHERE j.recording_id = $1`, recordingID).Scan(&indexStatus, &indexTask); err != nil {
+		t.Fatalf("query index outbox error = %v", err)
+	}
+	if indexStatus != "pending" || indexTask != "index:"+recordingID.String() {
+		t.Fatalf("index job = %q task = %q", indexStatus, indexTask)
 	}
 }
 

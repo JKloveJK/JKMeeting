@@ -18,7 +18,7 @@ type recordingStore interface {
 	ClaimForTranscription(context.Context, uuid.UUID, time.Duration) (recording.TranscriptionClaim, error)
 	ReleaseForRetryWithLease(context.Context, uuid.UUID, uuid.UUID) error
 	MarkFailedWithLease(context.Context, uuid.UUID, uuid.UUID, string) error
-	MarkDoneWithLease(context.Context, uuid.UUID, uuid.UUID, string) error
+	MarkDoneWithLease(context.Context, uuid.UUID, uuid.UUID, string, string) error
 }
 
 type downloader interface {
@@ -69,7 +69,7 @@ func (handler *Handler) ProcessTask(ctx context.Context, task *asynq.Task) error
 	if err != nil {
 		return handler.retryOrFail(ctx, recordingID, claim, err)
 	}
-	return handler.recordings.MarkDoneWithLease(ctx, recordingID, claim.LeaseToken, text)
+	return handler.recordings.MarkDoneWithLease(ctx, recordingID, claim.LeaseToken, text, payload.RequestID)
 }
 
 func (handler *Handler) retryOrFail(ctx context.Context, recordingID uuid.UUID, claim recording.TranscriptionClaim, cause error) error {

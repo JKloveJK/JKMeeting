@@ -31,6 +31,15 @@ type Config struct {
 	TranscodeConcurrency int
 	TranscodeNice        int
 	TranscodeBitrates    string
+	LLMBaseURL           string
+	LLMModel             string
+	LLMTimeout           time.Duration
+	LLMMaxRetries        int
+	LLMConcurrency       int
+	LLMContextTokens     int
+	EmbeddingBaseURL     string
+	EmbeddingDim         int
+	RAGTopK              int
 }
 
 func Load() (Config, error) {
@@ -58,6 +67,17 @@ func Load() (Config, error) {
 		TranscodeConcurrency: intOrDefault("TRANSCODE_CONCURRENCY", 1),
 		TranscodeNice:        intOrDefault("TRANSCODE_NICE", 10),
 		TranscodeBitrates:    valueOrDefault("TRANSCODE_BITRATES_KBPS", "32,64,96"),
+		// LLM_CONTEXT_TOKENS 必须与 llama-server 的 -c 一致，否则长转写会被服务端截断或拒绝。
+		LLMBaseURL:       valueOrDefault("LLM_BASE_URL", "http://127.0.0.1:8083"),
+		LLMModel:         valueOrDefault("LLM_MODEL", "qwen2.5-7b-instruct-q4_k_m"),
+		LLMTimeout:       time.Duration(intOrDefault("LLM_TIMEOUT_SECONDS", 90)) * time.Second,
+		LLMMaxRetries:    nonNegativeIntOrDefault("LLM_MAX_RETRIES", 2),
+		LLMConcurrency:   intOrDefault("LLM_CONCURRENCY", 1),
+		LLMContextTokens: intOrDefault("LLM_CONTEXT_TOKENS", 8192),
+		// EMBEDDING_DIM 必须与迁移 0005 中 vector(1024) 的列维度一致。
+		EmbeddingBaseURL: valueOrDefault("EMBEDDING_BASE_URL", "http://127.0.0.1:8084"),
+		EmbeddingDim:     intOrDefault("EMBEDDING_DIM", 1024),
+		RAGTopK:          intOrDefault("RAG_TOP_K", 5),
 	}
 
 	for name, value := range map[string]string{
@@ -89,6 +109,18 @@ func intOrDefault(name string, fallback int) int {
 	}
 	parsed, err := strconv.Atoi(raw)
 	if err != nil || parsed <= 0 {
+		return fallback
+	}
+	return parsed
+}
+
+func nonNegativeIntOrDefault(name string, fallback int) int {
+	raw := strings.TrimSpace(os.Getenv(name))
+	if raw == "" {
+		return fallback
+	}
+	parsed, err := strconv.Atoi(raw)
+	if err != nil || parsed < 0 {
 		return fallback
 	}
 	return parsed

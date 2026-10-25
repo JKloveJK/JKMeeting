@@ -1,6 +1,7 @@
 services:
   postgres:
-    image: postgres:16-alpine
+    # pgvector 镜像基于 Debian（glibc）；从 postgres:16-alpine 迁移现有数据卷后需执行一次 REINDEX DATABASE。
+    image: pgvector/pgvector:pg16
     shm_size: 256mb
     environment:
       POSTGRES_DB: jkmeeting

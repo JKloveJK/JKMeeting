@@ -132,8 +132,14 @@ func (repository *Repository) MarkFailedWithLease(ctx context.Context, recording
 	return err
 }
 
-func (repository *Repository) MarkDoneWithLease(ctx context.Context, recordingID, leaseToken uuid.UUID, transcript string) error {
-	_, err := repository.pool.Exec(ctx, `
+func (repository *Repository) MarkDoneWithLease(ctx context.Context, recordingID, leaseToken uuid.UUID, transcript, requestID string) error {
+	transaction, err := repository.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = transaction.Rollback(ctx) }()
+
+	result, err := transaction.Exec(ctx, `
 		UPDATE recordings
 		SET status = $3, transcript = $4, error_message = NULL,
 		    transcribe_lease_token = NULL, transcribe_lease_until = NULL, updated_at = now()
@@ -144,7 +150,51 @@ func (repository *Repository) MarkDoneWithLease(ctx context.Context, recordingID
 		transcript,
 		leaseToken,
 	)
-	return err
+	if err != nil {
+		return err
+	}
+	if result.RowsAffected() != 1 {
+		return transaction.Commit(ctx)
+	}
+
+	// 转写落库与纪要、索引任务登记同属一个事务：要么都有，要么都没有。
+	if _, err = transaction.Exec(ctx, `
+		INSERT INTO meeting_insights (recording_id, status) VALUES ($1, 'pending')
+		ON CONFLICT (recording_id) DO NOTHING`,
+		recordingID,
+	); err != nil {
+		return err
+	}
+	if _, err = transaction.Exec(ctx, `
+		INSERT INTO analysis_outbox (id, recording_id, task_id, request_id, status)
+		VALUES ($1, $2, $3, $4, 'pending')
+		ON CONFLICT (recording_id) DO NOTHING`,
+		uuid.New(),
+		recordingID,
+		"analysis:"+recordingID.String(),
+		requestID,
+	); err != nil {
+		return err
+	}
+	if _, err = transaction.Exec(ctx, `
+		INSERT INTO transcript_index_jobs (recording_id, status) VALUES ($1, 'pending')
+		ON CONFLICT (recording_id) DO NOTHING`,
+		recordingID,
+	); err != nil {
+		return err
+	}
+	if _, err = transaction.Exec(ctx, `
+		INSERT INTO index_outbox (id, recording_id, task_id, request_id, status)
+		VALUES ($1, $2, $3, $4, 'pending')
+		ON CONFLICT (recording_id) DO NOTHING`,
+		uuid.New(),
+		recordingID,
+		"index:"+recordingID.String(),
+		requestID,
+	); err != nil {
+		return err
+	}
+	return transaction.Commit(ctx)
 }
 
 func (repository *Repository) FindByID(ctx context.Context, recordingID uuid.UUID) (Recording, error) {

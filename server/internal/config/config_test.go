@@ -33,4 +33,30 @@ func TestLoadReadsLocalSettings(t *testing.T) {
 	if got.UserID != "p0-local-user" {
 		t.Fatalf("UserID = %q, want p0-local-user", got.UserID)
 	}
+	if got.LLMBaseURL != "http://127.0.0.1:8083" || got.LLMTimeout.Seconds() != 90 || got.LLMMaxRetries != 2 ||
+		got.LLMConcurrency != 1 || got.LLMContextTokens != 8192 {
+		t.Fatalf("LLM defaults = %+v", got)
+	}
+	if got.EmbeddingBaseURL != "http://127.0.0.1:8084" || got.EmbeddingDim != 1024 || got.RAGTopK != 5 {
+		t.Fatalf("RAG defaults = %+v", got)
+	}
+}
+
+func TestLoadAllowsZeroLLMRetries(t *testing.T) {
+	t.Setenv("DATABASE_URL", "postgres://fixture")
+	t.Setenv("REDIS_ADDR", "127.0.0.1:6379")
+	t.Setenv("S3_ENDPOINT", "http://127.0.0.1:9000")
+	t.Setenv("S3_ACCESS_KEY", "fixture-access")
+	t.Setenv("S3_SECRET_KEY", "fixture-secret")
+	t.Setenv("API_BEARER_TOKEN", "fixture-token")
+	t.Setenv("LLM_MAX_RETRIES", "0")
+	t.Setenv("LLM_CONTEXT_TOKENS", "-1")
+
+	got, err := Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.LLMMaxRetries != 0 || got.LLMContextTokens != 8192 {
+		t.Fatalf("retries = %d context = %d", got.LLMMaxRetries, got.LLMContextTokens)
+	}
 }

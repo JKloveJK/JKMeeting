@@ -13,10 +13,14 @@ import (
 	"github.com/hibiken/asynq"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jiankailei/jkmeeting/server/internal/config"
+	"github.com/jiankailei/jkmeeting/server/internal/embedding"
 	"github.com/jiankailei/jkmeeting/server/internal/httpapi"
+	"github.com/jiankailei/jkmeeting/server/internal/insights"
+	"github.com/jiankailei/jkmeeting/server/internal/llm"
 	"github.com/jiankailei/jkmeeting/server/internal/observability"
 	"github.com/jiankailei/jkmeeting/server/internal/outbox"
 	"github.com/jiankailei/jkmeeting/server/internal/queue"
+	"github.com/jiankailei/jkmeeting/server/internal/rag"
 	"github.com/jiankailei/jkmeeting/server/internal/recording"
 	"github.com/jiankailei/jkmeeting/server/internal/storage"
 	"github.com/jiankailei/jkmeeting/server/internal/transcode"
@@ -87,6 +91,20 @@ func main() {
 	transcodeDispatcher := queue.NewTranscodeDispatcher(outbox.NewTranscodeRepository(pool), asynqClient).
 		WithBatchLimit(configValue.OutboxDispatchBatch)
 	transcodeDispatcher.StartBackgroundLoop(ctx, 500*time.Millisecond)
+	// analysis_outbox 由 worker 在转写完成的事务中写入，只靠后台循环投递。
+	analysisDispatcher := queue.NewAnalysisDispatcher(outbox.NewAnalysisRepository(pool), asynqClient).
+		WithBatchLimit(configValue.OutboxDispatchBatch)
+	analysisDispatcher.StartBackgroundLoop(ctx, 500*time.Millisecond)
+	indexDispatcher := queue.NewIndexDispatcher(outbox.NewIndexRepository(pool), asynqClient).
+		WithBatchLimit(configValue.OutboxDispatchBatch)
+	indexDispatcher.StartBackgroundLoop(ctx, 500*time.Millisecond)
+
+	// 问答是交互请求：只重试 1 次，与 Worker 共享 llama-server 的单个推理槽位。
+	askLLM := llm.NewClient(llm.Config{BaseURL: configValue.LLMBaseURL, Model: configValue.LLMModel,
+		Timeout: configValue.LLMTimeout, MaxRetries: 1, Concurrency: configValue.LLMConcurrency, MaxTokens: rag.AnswerMaxTokens})
+	askEmbedder := embedding.NewClient(embedding.Config{BaseURL: configValue.EmbeddingBaseURL, Dim: configValue.EmbeddingDim,
+		Timeout: 10 * time.Second, MaxRetries: 1})
+	answerer := rag.NewAnswerer(askEmbedder, rag.NewRepository(pool), askLLM)
 
 	handler := httpapi.NewRecordingAPI(
 		recording.NewRepository(pool),
@@ -95,6 +113,8 @@ func main() {
 		configValue.APIBearerToken,
 	).
 		WithHLS(transcode.NewRepository(pool), s3, httpapi.NewHLSSigner(configValue.APIBearerToken)).
+		WithInsights(insights.NewRepository(pool)).
+		WithAsk(answerer, configValue.RAGTopK).
 		WithMetrics(metrics).
 		WithRateLimit(configValue.RateLimitRPS, configValue.RateLimitBurst).
 		WithBackpressure(outboxRepo.CountPending, configValue.MaxOutboxBacklog).

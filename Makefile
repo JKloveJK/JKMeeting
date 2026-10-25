@@ -4,7 +4,7 @@ SHELL := /bin/bash
 -include .env
 export POSTGRES_PASSWORD DATABASE_URL REDIS_ADDR S3_ENDPOINT S3_ACCESS_KEY S3_SECRET_KEY API_BEARER_TOKEN API_ADDR ASR_BASE_URL API_BASE_URL
 
-.PHONY: help doctor verify test-core bench-core opus-xcframework test-apple-bridge test-apple-ios test-apple-macos prepare-local-config up-local migrate-server test-server run-server run-server-lan run-worker run-worker-lan run-whisper smoke-server smoke-asr smoke-hls smoke load e2e-local
+.PHONY: help doctor verify test-core bench-core opus-xcframework test-apple-bridge test-apple-ios test-apple-macos prepare-local-config up-local migrate-server test-server run-server run-server-lan download-llm-models run-llm eval-insights eval-insights-audio run-worker run-worker-lan run-whisper smoke-server smoke-asr smoke-hls smoke load e2e-local
 
 help: ## 列出可用的项目验证入口
 	@printf "JKMeeting verification targets:\n"
@@ -23,6 +23,10 @@ help: ## 列出可用的项目验证入口
 	@printf "  make run-server      启动本地 Go API\n"
 	@printf "  make run-server-lan  从私有环境变量启动局域网 Go API\n"
 	@printf "  make run-whisper     启动本机 Whisper HTTP 服务\n"
+	@printf "  make download-llm-models 下载并校验 P3 本地模型\n"
+	@printf "  make run-llm         启动本机 llama-server（P3 纪要抽取）\n"
+	@printf "  make eval-insights   P3-1 文字模式纪要评测\n"
+	@printf "  make eval-insights-audio P3-1 音频模式全链路纪要评测\n"
 	@printf "  make run-worker      启动 Redis 转写任务 Worker\n"
 	@printf "  make run-worker-lan  从私有环境变量启动局域网 Worker\n"
 	@printf "  make smoke-server    运行 API curl 冒烟测试\n"
@@ -98,6 +102,34 @@ run-server-lan: run-server ## 使用调用方提供的局域网地址启动同�
 
 run-whisper: ## 启动本机 Whisper HTTP 服务
 	server/scripts/start-whisper.sh
+
+LLM_MODEL_FILE ?= server/llm/models/Qwen2.5-7B-Instruct-Q4_K_M.gguf
+LLM_PORT ?= 8083
+LLM_CONTEXT_TOKENS ?= 8192
+
+download-llm-models: ## 下载并校验 P3 本地 LLM 与 embedding 模型（约 5 GB，已存在则跳过）
+	@server/scripts/download-llm-models.sh
+
+run-llm: ## 启动本机 llama-server（OpenAI 兼容，端口 $(LLM_PORT)，-c 须与 LLM_CONTEXT_TOKENS 一致）
+	@test -f "$(LLM_MODEL_FILE)" || { echo "缺少模型文件，请先运行 make download-llm-models"; exit 1; }
+	llama-server -m "$(LLM_MODEL_FILE)" -c $(LLM_CONTEXT_TOKENS) -np 1 -ngl 99 --host 127.0.0.1 --port $(LLM_PORT)
+
+EMBEDDING_MODEL_FILE ?= server/llm/models/bge-m3-Q8_0.gguf
+EMBEDDING_PORT ?= 8084
+
+run-embedding: ## 启动本机 bge-m3 embedding 服务（OpenAI 兼容 /v1/embeddings，端口 $(EMBEDDING_PORT)）
+	@test -f "$(EMBEDDING_MODEL_FILE)" || { echo "缺少模型文件，请先运行 make download-llm-models"; exit 1; }
+	llama-server -m "$(EMBEDDING_MODEL_FILE)" --embeddings -c 8192 -b 2048 -ub 2048 -ngl 99 --host 127.0.0.1 --port $(EMBEDDING_PORT)
+
+EVAL_REPEAT ?= 0
+
+eval-insights: ## P3-1 文字模式纪要评测（需 llama-server；EVAL_REPEAT=50 做格式稳定性测试）
+	@mkdir -p output
+	go -C server run ./cmd/insighteval -cases eval/p3/cases.json -repeat $(EVAL_REPEAT) -out ../output/p3-1-text-eval-$$(date +%Y%m%d-%H%M%S).jsonl
+
+eval-insights-audio: ## P3-1 音频模式全链路纪要评测（需 API、Worker、Whisper 与 llama-server）
+	@: "$${API_BEARER_TOKEN:?请设置 API_BEARER_TOKEN}"
+	@server/scripts/p3-audio-eval.sh
 
 run-worker: ## 从本机环境启动 Redis 转写任务 Worker
 	@: "$${DATABASE_URL:?请设置 DATABASE_URL}" "$${REDIS_ADDR:?请设置 REDIS_ADDR}" "$${S3_ENDPOINT:?请设置 S3_ENDPOINT}" "$${S3_ACCESS_KEY:?请设置 S3_ACCESS_KEY}" "$${S3_SECRET_KEY:?请设置 S3_SECRET_KEY}" "$${API_BEARER_TOKEN:?请设置 API_BEARER_TOKEN}"

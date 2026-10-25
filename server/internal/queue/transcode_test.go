@@ -61,6 +61,27 @@ func TestTranscodeDispatcherEnqueuesIntoTranscodeQueue(t *testing.T) {
 	}
 }
 
+func TestAnalysisTaskRoundTripAndDispatcherQueue(t *testing.T) {
+	task, err := NewAnalysisTask("recording-2", "request-2")
+	if err != nil || task.Type() != TypeAnalysis {
+		t.Fatalf("task = %v err = %v", task, err)
+	}
+	payload, err := ParseAnalysisPayload(task)
+	if err != nil || payload.RecordingID != "recording-2" || payload.RequestID != "request-2" {
+		t.Fatalf("payload = %+v err = %v", payload, err)
+	}
+
+	event := &outbox.Event{ID: uuid.New(), RecordingID: uuid.New(), TaskID: "analysis:test", RequestID: "request-test"}
+	store := &fakeOutboxStore{event: event}
+	enqueuer := &recordingEnqueuer{}
+	if err := NewAnalysisDispatcher(store, enqueuer).DispatchOne(context.Background()); err != nil {
+		t.Fatalf("DispatchOne() error = %v", err)
+	}
+	if enqueuer.taskType != TypeAnalysis || enqueuer.queue != QueueAnalysis || !store.dispatched {
+		t.Fatalf("enqueuer = %+v dispatched = %v", enqueuer, store.dispatched)
+	}
+}
+
 type failingOutboxStore struct{ fakeOutboxStore }
 
 func (failingOutboxStore) ClaimPending(context.Context) (*outbox.Event, error) {

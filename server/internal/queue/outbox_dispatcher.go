@@ -42,6 +42,16 @@ func NewTranscodeDispatcher(outboxStore outboxStore, enqueuer taskEnqueuer) *Dis
 		options: TranscodeEnqueueOptions()}
 }
 
+func NewAnalysisDispatcher(outboxStore outboxStore, enqueuer taskEnqueuer) *Dispatcher {
+	return &Dispatcher{outbox: outboxStore, enqueuer: enqueuer, batchLimit: 64, newTask: NewAnalysisTask,
+		options: AnalysisEnqueueOptions()}
+}
+
+func NewIndexDispatcher(outboxStore outboxStore, enqueuer taskEnqueuer) *Dispatcher {
+	return &Dispatcher{outbox: outboxStore, enqueuer: enqueuer, batchLimit: 64, newTask: NewIndexTask,
+		options: IndexEnqueueOptions()}
+}
+
 func (dispatcher *Dispatcher) enqueueOptions(taskID string) []asynq.Option {
 	return append([]asynq.Option{asynq.TaskID(taskID)}, dispatcher.options...)
 }

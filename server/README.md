@@ -9,6 +9,7 @@
 - Redis / asynq 保存转写任务（`default` 队列）和 HLS 转码任务（`transcode` 队列）。
 - Go API 与独立的 asynq Worker 分进程运行；Worker 从对象存储取音频并调用本机 `whisper-server` 转写，同一进程内另一个 `asynq.Server` 调用宿主机 FFmpeg 生成多码率 HLS（P2-4，见 [ADR 0007](../docs/decisions/0007-hls-transcode-signed-playlist.md)）。
 - 客户端音频通过预签名 PUT URL 直传 SeaweedFS。
+- P3-1：转写完成的事务同时写入 `meeting_insights(pending)` 和 `analysis_outbox`。API 后台循环把任务投递到 `analysis` 队列，Worker 的第三个 `asynq.Server` 调用本机 `llama-server`（OpenAI 兼容接口 + `json_schema` 约束解码），生成结构化纪要（摘要、决策、待办、观点）。
 
 ## 运行依赖
 
@@ -19,6 +20,7 @@ make prepare-local-config  # 从私有环境生成忽略的 server/seaweedfs/s3.
 make up-local             # 启动本机依赖；首次启动前检查端口只绑定回环
 make migrate-server
 make run-whisper          # 独立终端，本机 Whisper
+make run-llm              # 独立终端，本机 llama-server（P3 纪要）
 make run-worker           # 独立终端，异步任务
 make run-server           # 独立终端，HTTP API
 ```
@@ -34,6 +36,7 @@ make run-server           # 独立终端，HTTP API
 | GET | `/v1/recordings/{id}` | 查询录音状态、文本和错误 |
 | GET | `/v1/recordings/{id}/playback` | 返回原始文件预签名 GET URL `playback_url`，以及 `transcode_status`（`none` / `pending` / `processing` / `ready` / `failed`）；`ready` 时附带签名相对地址 `hls_url` 和 `hls_variants_kbps`，`failed` 时附带 `transcode_error` |
 | GET | `/v1/hls/{id}/master.m3u8`、`/v1/hls/{id}/{N}k/index.m3u8` | 免 Bearer，校验 `exp` + `sig`（15 分钟有效）；返回改写后的 playlist：子 playlist 带签名，init 段与分片为 S3 预签名地址；签名无效 `403`，路径非法 `400`，未就绪 `404` |
+| GET | `/v1/recordings/{id}/insights` | 会议纪要状态 `status`（`none` / `pending` / `processing` / `ready` / `failed`）；`ready` 时 `result` 为结构化纪要，并附带 `model`、`prompt_tokens`、`completion_tokens`、`llm_calls`、`analysis_ms`；`failed` 时附带 `error_message`；录音不存在返回 `404` |
 | GET | `/healthz` | L7 探针（PostgreSQL 查询 + Redis `PING`），免鉴权，正常返回 `200`，异常返回 `503` |
 | GET | `/metrics` | Prometheus 文本指标端点（HTTP 直方图、慢查询计数、连接池水位、Outbox 积压、限流/背压计数） |
 
@@ -50,6 +53,10 @@ Authorization: Bearer <API_BEARER_TOKEN>
 - `RATE_LIMIT_RPS`（默认 `2000`）、`RATE_LIMIT_BURST`（默认 `2000`）
 - `MAX_OUTBOX_BACKLOG`（默认 `50000`）、`OUTBOX_BATCH_SIZE`（默认 `64`）
 - Worker 转码：`FFMPEG_PATH`（默认 `ffmpeg`）、`TRANSCODE_CONCURRENCY`（默认 `1`）、`TRANSCODE_NICE`（默认 `10`）、`TRANSCODE_BITRATES_KBPS`（默认 `32,64,96`，须严格递增）
+
+- Worker 纪要（P3-1）：`LLM_BASE_URL`（默认 `http://127.0.0.1:8083`）、`LLM_MODEL`、`LLM_TIMEOUT_SECONDS`（默认 `90`）、`LLM_MAX_RETRIES`（默认 `2`）、`LLM_CONCURRENCY`（默认 `1`）、`LLM_CONTEXT_TOKENS`（默认 `8192`，必须与 `llama-server -c` 一致）
+
+迁移 `0004_add_meeting_insights.sql` 新增 `meeting_insights` 和 `analysis_outbox`。本地模型用 `make download-llm-models` 下载（约 5 GB，sha256 校验，存到被忽略的 `server/llm/models/`），用 `make run-llm` 启动；评测入口为 `make eval-insights`（文字模式，`EVAL_REPEAT=50` 用于格式稳定性）和 `make eval-insights-audio`（`say` 合成语音后跑全链路）。
 
 迁移 `0003_add_transcode_jobs.sql` 新增 `transcode_jobs` 与 `transcode_outbox`。上传确认事务同时写入转写 outbox、转码任务和转码 outbox；历史录音没有转码任务，回放接口返回 `transcode_status=none`。
 

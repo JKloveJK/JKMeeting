@@ -14,6 +14,7 @@ apple/xcode-build/
 !.env.example
 server/seaweedfs/s3.json
 server/whisper/models/
+server/llm/models/
 **/__pycache__/
 **/*.pyc
 output/
