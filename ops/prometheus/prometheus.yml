@@ -1,0 +1,14 @@
+# P5 监控：抓取本机 Go API 的 /metrics（P1 已落地，免鉴权、仅本机回环）。
+# 启动：docker compose --profile observability up -d prometheus
+global:
+  scrape_interval: 15s
+
+rule_files:
+  - alerts.yml
+
+scrape_configs:
+  - job_name: jkmeeting-api
+    metrics_path: /metrics
+    static_configs:
+      # API 跑在宿主机而非 Compose 内，经 host.docker.internal 回连。
+      - targets: ["host.docker.internal:8082"]

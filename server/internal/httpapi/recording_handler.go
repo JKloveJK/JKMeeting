@@ -151,6 +151,16 @@ func (api *RecordingAPI) ServeHTTP(response http.ResponseWriter, request *http.R
 		return
 	}
 
+	// WebSocket 推流需要 Hijack 原始连接，不能走 statusCapturingWriter 包装；单独在鉴权后直通。
+	if request.Method == http.MethodGet && request.URL.Path == "/v1/stream" {
+		if request.Header.Get("Authorization") != "Bearer "+api.token {
+			api.writeError(response, tc.RequestID, http.StatusUnauthorized, "未授权")
+			return
+		}
+		api.stream(response, request, tc)
+		return
+	}
+
 	route := classifyRoute(request.Method, request.URL.Path)
 	writer := &statusCapturingWriter{ResponseWriter: response, status: http.StatusOK}
 	defer func() {

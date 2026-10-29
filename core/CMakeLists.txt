@@ -39,6 +39,7 @@ add_library(jkmeeting_core
     src/ogg_opus_encoder.cpp
     src/ogg_packet_reader.cpp
     src/ogg_opus_decoder.cpp
+    src/jitter_buffer.cpp
 )
 
 target_include_directories(jkmeeting_core PUBLIC include)
@@ -64,6 +65,7 @@ jkmeeting_core_test(opus_encoder_test)
 jkmeeting_core_test(ogg_opus_encoder_test)
 jkmeeting_core_test(ogg_packet_reader_test)
 jkmeeting_core_test(ogg_opus_decoder_test)
+jkmeeting_core_test(jitter_buffer_test)
 
 add_executable(audio_session_bench bench/audio_session_bench.cpp)
 target_link_libraries(audio_session_bench PRIVATE jkmeeting_core)

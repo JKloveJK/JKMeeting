@@ -37,6 +37,8 @@ make run-server           # 独立终端，HTTP API
 | GET | `/v1/recordings/{id}/playback` | 返回原始文件预签名 GET URL `playback_url`，以及 `transcode_status`（`none` / `pending` / `processing` / `ready` / `failed`）；`ready` 时附带签名相对地址 `hls_url` 和 `hls_variants_kbps`，`failed` 时附带 `transcode_error` |
 | GET | `/v1/hls/{id}/master.m3u8`、`/v1/hls/{id}/{N}k/index.m3u8` | 免 Bearer，校验 `exp` + `sig`（15 分钟有效）；返回改写后的 playlist：子 playlist 带签名，init 段与分片为 S3 预签名地址；签名无效 `403`，路径非法 `400`，未就绪 `404` |
 | GET | `/v1/recordings/{id}/insights` | 会议纪要状态 `status`（`none` / `pending` / `processing` / `ready` / `failed`）；`ready` 时 `result` 为结构化纪要，并附带 `model`、`prompt_tokens`、`completion_tokens`、`llm_calls`、`analysis_ms`；`failed` 时附带 `error_message`；录音不存在返回 `404` |
+| POST | `/v1/ask` | 跨会议 RAG 问答（P3-2）：`{question, top_k?}`，返回答案、引用（录音 ID/块序号/片段/距离）、`insufficient` 与 token/延迟统计；引用经服务端校验，越界丢弃 |
+| GET | `/v1/stream` | 实时推流（P5 轻量版，WebSocket + Bearer）：二进制帧 `[4B 大端序号][S16LE PCM 320 样本]`，客户端发文本 `END` 后回统计 JSON（首帧/丢包/乱序）。验证客户端：`go run ./cmd/streamclient` |
 | GET | `/healthz` | L7 探针（PostgreSQL 查询 + Redis `PING`），免鉴权，正常返回 `200`，异常返回 `503` |
 | GET | `/metrics` | Prometheus 文本指标端点（HTTP 直方图、慢查询计数、连接池水位、Outbox 积压、限流/背压计数） |
 
@@ -59,6 +61,15 @@ Authorization: Bearer <API_BEARER_TOKEN>
 迁移 `0004_add_meeting_insights.sql` 新增 `meeting_insights` 和 `analysis_outbox`。本地模型用 `make download-llm-models` 下载（约 5 GB，sha256 校验，存到被忽略的 `server/llm/models/`），用 `make run-llm` 启动；评测入口为 `make eval-insights`（文字模式，`EVAL_REPEAT=50` 用于格式稳定性）和 `make eval-insights-audio`（`say` 合成语音后跑全链路）。
 
 迁移 `0003_add_transcode_jobs.sql` 新增 `transcode_jobs` 与 `transcode_outbox`。上传确认事务同时写入转写 outbox、转码任务和转码 outbox；历史录音没有转码任务，回放接口返回 `transcode_status=none`。
+
+## MCP Server（P3-3）
+
+`go run ./cmd/mcp`（或 `make run-mcp`）启动 stdio MCP Server，工具：`list_recordings`、`get_transcript`、`get_insights`、`search_meetings`、`ask_meetings`，与 HTTP 的纪要/RAG 共用同一业务层。仅需 `DATABASE_URL`（其余沿用 embedding/LLM 默认地址）。仓库根 `.cursor/mcp.json` 已配置 Cursor 加载（从 `.env` 注入凭据）；协议冒烟：`make test-mcp`。
+
+## 监控与迁移演练（P5）
+
+- Prometheus：`docker compose --profile observability up -d prometheus` 后访问 `127.0.0.1:9090`，抓取宿主机 API `/metrics`，告警规则在 `ops/prometheus/alerts.yml`。
+- 不停机迁移演练：`server/scripts/p5-migration-drill.sh`（expand 迁移 `0006` + 回填 + 前后冒烟；contract 删列只输出命令不自动执行）。
 
 ## 验证与压测（P0 & P1）
 

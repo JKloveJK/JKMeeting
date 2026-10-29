@@ -1,0 +1,31 @@
+groups:
+  - name: jkmeeting
+    rules:
+      - alert: JKMeetingHighErrorRate
+        expr: sum(rate(jkmeeting_http_requests_total{status=~"5.."}[5m])) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "JKMeeting API 5xx 错误率过高（{{ $value }} req/s）"
+      - alert: JKMeetingOutboxBacklog
+        expr: jkmeeting_outbox_pending_count > 1000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Outbox 积压 {{ $value }} 条，转写/转码/分析投递可能受阻"
+      - alert: JKMeetingSlowQueries
+        expr: increase(jkmeeting_db_slow_queries_total[10m]) > 50
+        for: 1m
+        labels:
+          severity: info
+        annotations:
+          summary: "10 分钟内慢查询增加 {{ $value }} 条，检查 EXPLAIN 与索引"
+      - alert: JKMeetingDBPoolExhausted
+        expr: jkmeeting_db_pool_acquired_conns >= jkmeeting_db_pool_max_conns
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "pgxpool 连接池打满，参考 P1 连接池拐点实验调整 DB_MAX_CONNS"

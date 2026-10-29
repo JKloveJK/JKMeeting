@@ -61,11 +61,29 @@
 | 单条纪要抽取延迟 | 从抽取开始到结果返回（文字模式，单槽位） | P95 `< 8 s` | P50 `12.5 s` / **P95 `15.5 s`**（50 次：`16.3 s`）；生成速度约 24 token/s，平均输出 270 token，约 90% 耗时在生成 | 同上；系统负载 100～190 | `llama-server` 的 `print_timing`；同上 | **未达标**；瓶颈与方案见报告 §3.3 |
 | 全链路召回率（音频模式） | `say` 合成 → 上传 → Whisper → LLM，按同一口径评分 | 跑通 ≥ 5 条，报告 ASR 影响 | **28.6%**（8/28）；转写里仍可找到的要点：原始 2/28，繁转简后 12/28 | 5 条，每条 38～44 秒，whisper ggml-base | `server/scripts/p3-audio-eval.sh`、`server/scripts/p3-asr-ceiling.py`；`output/p3-1-audio-*`、`output/p3-1-asr-ceiling.jsonl` | 已完成；瓶颈在 ASR（繁体输出、同音字、人名） |
 | 单段纪要 token 消耗 | 每段会议的 prompt / completion token | 记录 | 平均 301 / 270，1 次调用 | 约 250 字、40 秒的会议 | 同上 | 已完成 |
+| 纪要抽取延迟（投机解码复测） | 同 E5 口径，加 Qwen2.5-0.5B 草稿模型（接受率 71～77%） | P95 `< 8 s` | P50 `11.4 s` / P95 `13.1 s`，召回率 90.5%（95/105），格式失败 0 | 2026-10-29，负载约 12（与基线 100～190 不同，待同负载复测）；自报生成速度仍约 23.8 token/s | `make run-llm-speculative` + `make eval-insights`；[投机解码报告](reports/2026-10-29-p3-speculative-decoding-report.md) | **未达标（已知缺口，按用户决策保留）** |
+| RAG 检索命中率（top-5） | 期望会议进入 top-5 引用候选的比例 | `≥ 90%` | **100%**（20/20），引用命中 100%，越界引用 0 | 2026-10-23，Qwen2.5-7B + bge-m3，20 段合成会议每段 1 块 | `make eval-rag`；`output/p3-2-rag-eval.jsonl`；[P3-2 报告](reports/2026-10-29-p3-2-rag-report.md) | 初步通过；待审核问题集 |
+| RAG 答案关键词命中率 | 有答案问题中答案命中关键词的比例 | `≥ 80%` | **95%**（19/20）；无答案 2/2 正确拒答，误拒 0 | 同上，22 题（20 有答案 + 2 无答案） | 同上 | 初步通过；待审核 |
+| RAG 问答延迟 | 问题向量化 + 检索 + LLM 作答端到端 | P95 `< 8 s` | 首测 P50 `3.98 s` / P95 `8.35 s`；2026-10-29 投机解码复测 P50 `5.37 s` / **P95 `7.16 s`** | 复测负载低于首测，待同负载确认 | `output/p3-2-rag-speculative-summary.json`；[P3-2 报告](reports/2026-10-29-p3-2-rag-report.md) | 初步达标（复测） |
+| MCP 工具可用性 | stdio 协议 initialize/tools/list/tools/call 真实子进程冒烟 | 5 个工具可调用 | 通过：`list_recordings` 连真实 DB 返回数据 | 2026-10-29，本机 | `make test-mcp` | 已完成；Cursor 内真实加载待用户重启确认 |
+
+## 7. P4 Android 与 P5 工程化/实时流
+
+| 指标 / 实验项 | 定义 | 目标/判据 | 实测结果 | 环境与输入 | 命令/证据 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| Android 接入 core 改动量 | 为 Android 修改的既有 core 文件数 | 0 或极小 | **0**（`git diff HEAD -- core/` 仅 P5 抖动缓冲在 `CMakeLists.txt` +2 行登记） | 2026-10-29 | `git diff`；[P4 报告](reports/2026-10-29-p4-android-report.md) | 已完成 |
+| Android JNI 一致性 | 30 秒 48 kHz 输入经 core 后 16 kHz 输出时长误差 | ≤ 1 帧 | 通过（instrumented 1 测试） | 模拟器 test_avd（android-34 arm64） | `./gradlew connectedDebugAndroidTest` | 已完成 |
+| Android 冷启动 | `am start -W` TotalTime；App 内进程创建→首帧 | `< 800 ms` | `am start` 937～1134 ms（模拟器）；App 内 276～535 ms | 同上 | `am start -W` ×3 + logcat | 待真机复测（模拟器口径未达标） |
+| 抖动缓冲丢包恢复 | 30% 丢包下输出帧数/时长与静音填充 | 时长误差 ≤ 1 帧 | 1500 帧丢 440（29.3%），输出 1500 帧，填充 440 | 2026-10-29，core 纯单测 | `make test-core`（`jitter_buffer_test`） | 已完成 |
+| 实时推流首帧与连续性 | WebSocket 20 ms 帧推流首帧延迟与 30% 丢包连续性 | 首帧 `< 1.5 s`、流不中断 | 首帧 0 ms（同毫秒，回环）；30% 丢包 sent 174、lost 76、5 s 不中断 | 本机回环，合成 440 Hz | `output/p5-stream-smoke.log` | 已完成（非公网口径） |
+| 不停机迁移演练 | API 运行中 expand + 回填 + 前后冒烟 | 全程可用 | 通过，回填 8749 行 | 本机 Compose PostgreSQL | `server/scripts/p5-migration-drill.sh` | 已完成 |
+| Prometheus 抓取与告警 | target 状态、业务指标可查、规则加载 | 全部生效 | target `up`；`jkmeeting_http_requests_total` 可查；4 条规则加载 | Compose profile `observability` | `promtool check config` + 9090 API | 已完成 |
 
 ## 6. 后续阶段预登记
 
 | 阶段 | 指标 | 触发条件 | 当前状态 |
 | --- | --- | --- | --- |
 | P2 | 真机丢帧率、真机回放首帧、弱网自动切档 | 有真机或网络调节工具时 | P2-1～P2-4 已完成，结果见 §4；真机与弱网项未测 |
-| P3 | 结构化输出通过率、任务准确率、端到端 P95、单次成本 | 接入 LLM 或 RAG | P3-1 初步结果见 §5；P3-2 RAG、P3-3 MCP 未开始 |
-| P4 | iOS/Android 启动、采集、播放对比；core 改动量 | Android 接入 | 未开始 |
+| P3 | 结构化输出通过率、任务准确率、端到端 P95、单次成本 | 接入 LLM 或 RAG | P3-1 初步结果见 §5；P3-2 已完成初步评测；P3-3 MCP 已实施（见 §5 末行）；E5/R6 延迟缺口保留 |
+| P4 | iOS/Android 启动、采集、播放对比；core 改动量 | Android 接入 | 已完成（模拟器口径）：core 零修改、JNI 一致性通过、冷启动见 §7 |
+| P5 | 首帧、丢包恢复、CI 与监控 | 工程化与实时流 | 已完成本机口径：见 §7；CI 待远端首跑、公网弱网未测 |
