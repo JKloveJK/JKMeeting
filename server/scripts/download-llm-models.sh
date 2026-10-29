@@ -24,4 +24,8 @@ fetch "Qwen2.5-7B-Instruct-Q4_K_M.gguf" \
 fetch "bge-m3-Q8_0.gguf" \
   "https://huggingface.co/gpustack/bge-m3-GGUF/resolve/main/bge-m3-Q8_0.gguf" \
   "950f4a8e5e19477a6d3c26d2f162233c20002c601f75e4b002e3239997821167"
+# 投机解码草稿模型（P3 延迟实验）：与主模型同词表，约 0.35 GB。
+fetch "Qwen2.5-0.5B-Instruct-Q4_K_M.gguf" \
+  "https://huggingface.co/bartowski/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/Qwen2.5-0.5B-Instruct-Q4_K_M.gguf" \
+  "6eb923e7d26e9cea28811e1a8e852009b21242fb157b26149d3b188f3a8c8653"
 printf 'LLM 模型已校验：%s\n' "$MODEL_DIR"

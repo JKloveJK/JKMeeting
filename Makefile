@@ -4,7 +4,7 @@ SHELL := /bin/bash
 -include .env
 export POSTGRES_PASSWORD DATABASE_URL REDIS_ADDR S3_ENDPOINT S3_ACCESS_KEY S3_SECRET_KEY API_BEARER_TOKEN API_ADDR ASR_BASE_URL API_BASE_URL
 
-.PHONY: help doctor verify test-core bench-core opus-xcframework test-apple-bridge test-apple-ios test-apple-macos prepare-local-config up-local migrate-server test-server run-server run-server-lan download-llm-models run-llm eval-insights eval-insights-audio run-worker run-worker-lan run-whisper smoke-server smoke-asr smoke-hls smoke load e2e-local
+.PHONY: help doctor verify test-core bench-core opus-xcframework test-apple-bridge test-apple-ios test-apple-macos prepare-local-config up-local migrate-server test-server run-server run-server-lan download-llm-models run-llm run-llm-speculative eval-insights eval-insights-audio eval-rag run-mcp test-mcp run-worker run-worker-lan run-whisper smoke-server smoke-asr smoke-hls smoke load e2e-local test-android build-android p5-ci
 
 help: ## 列出可用的项目验证入口
 	@printf "JKMeeting verification targets:\n"
@@ -27,6 +27,12 @@ help: ## 列出可用的项目验证入口
 	@printf "  make run-llm         启动本机 llama-server（P3 纪要抽取）\n"
 	@printf "  make eval-insights   P3-1 文字模式纪要评测\n"
 	@printf "  make eval-insights-audio P3-1 音频模式全链路纪要评测\n"
+	@printf "  make eval-rag        P3-2 RAG 跨会议问答评测\n"
+	@printf "  make run-llm-speculative 带投机解码启动 llama-server\n"
+	@printf "  make run-mcp         启动 P3-3 MCP Server（stdio）\n"
+	@printf "  make test-mcp        运行 MCP 协议冒烟测试\n"
+	@printf "  make test-android    运行 Android 单元测试与构建\n"
+	@printf "  make p5-ci           本地运行与 CI 相同的快速门禁\n"
 	@printf "  make run-worker      启动 Redis 转写任务 Worker\n"
 	@printf "  make run-worker-lan  从私有环境变量启动局域网 Worker\n"
 	@printf "  make smoke-server    运行 API curl 冒烟测试\n"
@@ -130,6 +136,34 @@ eval-insights: ## P3-1 文字模式纪要评测（需 llama-server；EVAL_REPEAT
 eval-insights-audio: ## P3-1 音频模式全链路纪要评测（需 API、Worker、Whisper 与 llama-server）
 	@: "$${API_BEARER_TOKEN:?请设置 API_BEARER_TOKEN}"
 	@server/scripts/p3-audio-eval.sh
+
+eval-rag: ## P3-2 RAG 问答评测（需 DATABASE_URL、embedding 与 llama-server）
+	@: "$${DATABASE_URL:?请设置 DATABASE_URL}"
+	@mkdir -p output
+	go -C server run ./cmd/rageval -cases eval/p3/cases.json -questions eval/p3/rag-questions.json -out ../output/p3-2-rag-eval-$$(date +%Y%m%d-%H%M%S).jsonl | tee output/p3-2-rag-eval-latest-summary.json
+
+DRAFT_MODEL_FILE ?= server/llm/models/Qwen2.5-0.5B-Instruct-Q4_K_M.gguf
+
+run-llm-speculative: ## 带投机解码启动 llama-server（草稿模型 Qwen2.5-0.5B）
+	@test -f "$(LLM_MODEL_FILE)" || { echo "缺少主模型，请先运行 make download-llm-models"; exit 1; }
+	@test -f "$(DRAFT_MODEL_FILE)" || { echo "缺少草稿模型 $(DRAFT_MODEL_FILE)，请先运行 make download-llm-models"; exit 1; }
+	llama-server -m "$(LLM_MODEL_FILE)" -md "$(DRAFT_MODEL_FILE)" --spec-type draft-simple --spec-draft-n-max 3 -c $(LLM_CONTEXT_TOKENS) -np 1 -ngl 99 --host 127.0.0.1 --port $(LLM_PORT)
+
+run-mcp: ## 启动 P3-3 MCP Server（stdio；日志走 stderr，stdout 仅 JSON-RPC）
+	@: "$${DATABASE_URL:?请设置 DATABASE_URL}"
+	@go -C server run ./cmd/mcp
+
+test-mcp: ## 运行 MCP stdio 协议冒烟（tools/list + 只读工具调用，需 DATABASE_URL 与 embedding 服务）
+	@: "$${DATABASE_URL:?请设置 DATABASE_URL}"
+	@python3 server/scripts/test-mcp.py
+
+test-android: ## 运行 Android JVM 单测并构建 Debug APK（含 JNI/CMake 原生构建）
+	cd android && ./gradlew testDebugUnitTest assembleDebug
+
+build-android: test-android ## 同 test-android（保留语义化别名）
+
+p5-ci: test-core test-server ## 本地运行与 CI 相同的快速门禁（core 单测 + Go 单测；Android 与 Apple 由 CI 对应 job 执行）
+	@printf "p5-ci local gate passed (core + server).\n"
 
 run-worker: ## 从本机环境启动 Redis 转写任务 Worker
 	@: "$${DATABASE_URL:?请设置 DATABASE_URL}" "$${REDIS_ADDR:?请设置 REDIS_ADDR}" "$${S3_ENDPOINT:?请设置 S3_ENDPOINT}" "$${S3_ACCESS_KEY:?请设置 S3_ACCESS_KEY}" "$${S3_SECRET_KEY:?请设置 S3_SECRET_KEY}" "$${API_BEARER_TOKEN:?请设置 API_BEARER_TOKEN}"

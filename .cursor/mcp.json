@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "jkmeeting": {
+      "command": "bash",
+      "args": ["-lc", "set -a; [ -f .env ] && . ./.env; set +a; exec go -C server run ./cmd/mcp"],
+      "cwd": "${workspaceFolder}"
+    }
+  }
+}

@@ -1,7 +1,7 @@
 # P3-2 转写向量索引与跨会议问答技术方案
 
 - 日期：2026-10-23
-- 状态：实施中
+- 状态：已实施，初步评测完成（见 [P3-2 报告](../reports/2026-10-29-p3-2-rag-report.md)）；`make eval-rag` 入口已于 2026-10-29 补齐
 - 需求：[P3 Agent 管道需求 · P3-2](../requirements/2026-10-23-p3-agent-pipeline-requirements.md)
 
 ## 1. 关键取舍
